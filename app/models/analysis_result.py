@@ -24,7 +24,7 @@ class TacticalAction(BaseModel):
         json_schema_extra={"example": "Will improve rim protection and defensive rebounding."}
     )
 
-    # --- Optional Fields ---
+    # Optional Fields
     priority: Literal["High", "Medium", "Low"] = Field(
         default="Medium",
         description="Urgency level based on the game situation. Options: 'High', 'Medium', 'Low'.",

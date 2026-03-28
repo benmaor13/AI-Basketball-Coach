@@ -22,7 +22,7 @@ class LeagueRules(BaseModel):
     offensive_rebound_reset_seconds: int = Field(default=14, ge=12, le=35)
 
     @model_validator(mode='after')
-    def enforce_league_rules(self) -> 'LeagueRules':
+    def enforce_league_rules(self) -> LeagueRules:
         """
         Overrides manual input with official rules for standard formats.
         """

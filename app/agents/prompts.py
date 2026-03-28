@@ -1,7 +1,7 @@
 """
 prompt templates for the AI agents.
 """
-# introducing the llm to it's mission- I must improve this
+# introducing the llm to the goal (will be improved)
 SYSTEM_PROMPT = """
 You are an elite AI basketball coach and tactical analyst.
 Your objective is to analyze the provided game state, identify the most critical threat, 

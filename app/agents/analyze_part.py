@@ -5,8 +5,7 @@ from app.agents.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 
 class AnalystAgent:
     """
-    Acts as the 'Brain' of the system.
-    It processes raw basketball data and translates it into actionable coaching insights.
+     processes raw basketball data and translates it into actionable coaching insights.
     """
 
     def __init__(self):
@@ -20,9 +19,6 @@ class AnalystAgent:
         try:
             # Step 1: Serialize the incoming Pydantic model
             game_data_json = state.model_dump_json(indent=2)
-
-            # TODO: Future Step - Connect to OpenAI using 'game_data_json'
-
             # Step 2: Return a professional mock response for pipeline validation
             report = self._get_mock_report()
 
@@ -34,8 +30,7 @@ class AnalystAgent:
 
     def _get_mock_report(self) -> AnalysisReport:
         """
-        Mock report adjusted to match the required Literal action types:
-        ["Substitution", "Timeout", "Defensive Shift", "Pace Adjustment"]
+        Mock report to check the program before connecting with the key
         """
         return AnalysisReport(
             summary="Opponent is exploiting the high-pick-and-roll. Our defensive rotation is consistently late on the weak side.",
