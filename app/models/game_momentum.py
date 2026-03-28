@@ -1,34 +1,56 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Literal
 
-
 class GameMomentum(BaseModel):
-    """
-    Momentum of the game, helps deciding on the next steps
-    """
-
     overall_trend: Literal["Strong Home", "Slight Home", "Neutral", "Slight Away", "Strong Away"] = Field(
         default="Neutral",
-        description="Who currently controls the energy and pace of the game",
-        json_schema_extra={"example": "Strong Home"}
+        description="Who currently controls the energy and pace of the game(from the options Strong/Slight Home and Slight/Strong Away"
     )
 
     home_team_run: int = Field(
         default=0,
         ge=0,
-        description="Current unanswered points by the home team",
+        description="current streak of points by the home team when the away team did not score",
         json_schema_extra={"example": 8}
     )
+
     away_team_run: int = Field(
         default=0,
         ge=0,
-        description="Current unanswered points by the away team",
+        description="current streak of points by the away team when the home team did not score",
         json_schema_extra={"example": 0}
     )
 
     crowd_intensity: Literal["Quiet", "Engaged", "Hostile", "Electric"] = Field(
         default="Engaged",
-        description="The atmosphere in the arena, affecting player focus and pressure",
-        json_schema_extra={"example": "Electric"}
+        description="The atmosphere in the arena(Quiet, Engaged, Hostile,or Electric)",
     )
 
+    @model_validator(mode='after')
+    def validate_momentum_logic(self) -> 'GameMomentum':
+        """
+        Validates following things:
+        1.Teams cannot be on simultaneous scoring runs.
+        2.contradictions between runs and overall trend
+        """
+        if self.home_team_run > 0 and self.away_team_run > 0:
+            raise ValueError(
+                f"Conflicting state: Home run ({self.home_team_run}) and Away run ({self.away_team_run}). "
+                "Only one team can have a scoring run."
+            )
+
+        if self.home_team_run >= 6 and self.overall_trend in ["Slight Away", "Strong Away"]:
+            raise ValueError(
+                f"Contradiction: Home team is on a {self.home_team_run}-0 run, "
+                f"but momentum trend is set to '{self.overall_trend}'. "
+                "Trend must be neutral or favor the home team during a significant home run."
+            )
+
+        if self.away_team_run >= 6 and self.overall_trend in ["Slight Home", "Strong Home"]:
+            raise ValueError(
+                f"Contradiction: Away team is on a {self.away_team_run}-0 run, "
+                f"but momentum trend is set to '{self.overall_trend}'. "
+                "Trend must be neutral or favor the away team during a significant away run."
+            )
+
+        return self

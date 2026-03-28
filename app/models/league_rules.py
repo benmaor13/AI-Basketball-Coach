@@ -1,66 +1,53 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Literal
 
 
 class LeagueRules(BaseModel):
     """
-    Defines the regulatory environment of the match.
-    These constraints help the AI understand the pacing and rules of the specific league.
+    the rules and specific relevant details for the league where the game is played
     """
-    league_format: Literal["FIBA", "NBA", "NCAA", "EuroLeague", "3x3"] = Field(
+
+    league_format: Literal["FIBA", "NBA", "NCAA", "Custom"] = Field(
         default="FIBA",
-        description="League format",
-        json_schema_extra={"example": "FIBA"}
+        description="Select league. For NBA/FIBA/NCAA, all fields will be override, select costume if you want to choose something different",
+        json_schema_extra={"example": "NBA"}
     )
 
-    number_of_periods: int = Field(
-        default=4,
-        ge=1,
-        le=4,
-        description="Number of standard periods in the game (e.g.,4 quarters or 2 halves)",
-        json_schema_extra={"example": 4}
-    )
-    period_length_minutes: int = Field(
-        default=10,
-        ge=8,
-        le=20,
-        description="Duration of a single period in minutes",
-        json_schema_extra={"example": 10}
-    )
-    overtime_length_minutes: int = Field(
-        default=5,
-        ge=2,
-        le=5,
-        description="Duration of an overtime period in minutes",
-        json_schema_extra={"example": 5}
-    )
+    number_of_periods: int = Field(default=4, ge=1, le=4)
+    period_length_minutes: int = Field(default=10, ge=5, le=20)
+    overtime_length_minutes: int = Field(default=5, ge=2, le=5)
+    max_fouls_per_player: int = Field(default=5, ge=4, le=6)
+    team_fouls_to_penalty: int = Field(default=4, ge=1, le=7)
+    shot_clock_seconds: int = Field(default=24, ge=12, le=35)
+    offensive_rebound_reset_seconds: int = Field(default=14, ge=12, le=35)
 
-    max_fouls_per_player: int = Field(
-        default=5,
-        ge=4,
-        le=6,
-        description="Number of personal fouls before a player is disqualified",
-        json_schema_extra={"example": 5}
-    )
-    team_fouls_to_penalty: int = Field(
-        default=4,
-        ge=1,
-        le=7,
-        description="Number of team fouls in a period before the opposing team shoots free throws",
-        json_schema_extra={"example": 4}
-    )
+    @model_validator(mode='after')
+    def enforce_league_rules(self) -> 'LeagueRules':
+        """
+        Overrides manual input with official rules for standard formats.
+        """
+        if self.league_format == "NBA":
+            self.number_of_periods = 4
+            self.period_length_minutes = 12
+            self.max_fouls_per_player = 6
+            self.team_fouls_to_penalty = 4
+            self.shot_clock_seconds = 24
+            self.offensive_rebound_reset_seconds = 14
 
-    shot_clock_seconds: int = Field(
-        default=24,
-        ge=12,
-        le=30,
-        description="Duration of the shot clock in seconds",
-        json_schema_extra={"example": 24}
-    )
-    offensive_rebound_reset_seconds: int = Field(
-        default=14,
-        ge=12,
-        le=30,
-        description="Shot clock reset duration after an offensive rebound",
-        json_schema_extra={"example": 14}
-    )
+        elif self.league_format == "FIBA":
+            self.number_of_periods = 4
+            self.period_length_minutes = 10
+            self.max_fouls_per_player = 5
+            self.team_fouls_to_penalty = 4
+            self.shot_clock_seconds = 24
+            self.offensive_rebound_reset_seconds = 14
+
+        elif self.league_format == "NCAA":
+            self.number_of_periods = 2
+            self.period_length_minutes = 20
+            self.max_fouls_per_player = 5
+            self.team_fouls_to_penalty = 6
+            self.shot_clock_seconds = 30
+            self.offensive_rebound_reset_seconds = 20
+
+        return self
