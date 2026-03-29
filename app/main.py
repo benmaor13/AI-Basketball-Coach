@@ -2,14 +2,22 @@ from fastapi import FastAPI, HTTPException
 from app.models.game_state import GameState
 from app.models.analysis_result import AnalysisReport
 from app.agents.analyze_part import AnalystAgent
+from pydantic import BaseModel
 
+class HealthResponse(BaseModel):
+    """
+    Structure of the response to the "health check"
+    """
+    status: str
+    system: str
+    agent_model: str
 app = FastAPI(
     title="BasketballAI API",
     description="Real-time tactical analysis system for basketball coaches",
     version="1.0.0"
 )
 agent = AnalystAgent()
-@app.get("/")
+@app.get("/", response_model=HealthResponse)
 async def health_check():
     """Server  check"""
     return {

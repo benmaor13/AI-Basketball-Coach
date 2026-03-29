@@ -19,6 +19,7 @@ class LeagueRules(BaseModel):
     max_fouls_per_player: int = Field(default=5, ge=4, le=6)
     team_fouls_to_penalty: int = Field(default=4, ge=1, le=7)
     shot_clock_seconds: int = Field(default=24, ge=12, le=35)
+    max_timeouts: int = Field(default=5, ge=4, le=10)
     offensive_rebound_reset_seconds: int = Field(default=14, ge=12, le=35)
 
     @model_validator(mode='after')
@@ -33,7 +34,7 @@ class LeagueRules(BaseModel):
             self.team_fouls_to_penalty = 4
             self.shot_clock_seconds = 24
             self.offensive_rebound_reset_seconds = 14
-
+            self.max_timeouts = 7
         elif self.league_format == "FIBA":
             self.number_of_periods = 4
             self.period_length_minutes = 10
@@ -41,6 +42,7 @@ class LeagueRules(BaseModel):
             self.team_fouls_to_penalty = 4
             self.shot_clock_seconds = 24
             self.offensive_rebound_reset_seconds = 14
+            self.max_timeouts=5
 
         elif self.league_format == "NCAA":
             self.number_of_periods = 2
@@ -49,5 +51,6 @@ class LeagueRules(BaseModel):
             self.team_fouls_to_penalty = 6
             self.shot_clock_seconds = 30
             self.offensive_rebound_reset_seconds = 20
+            self.max_timeouts = 4
 
         return self

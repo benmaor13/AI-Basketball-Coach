@@ -3,7 +3,7 @@
 AI-powered tactical advisor designed to help basketball coaches make data-backed decisions under pressure. By analyzing live game data such as scores, fouls, and momentum it provides real-time recommendations for substitutions, defensive adjustments, and timeout strategies.
 
 ## MVP Status
-The core logic was previously validated in a local environment. This repository represents a refactor into a production-ready MVP(work in progress).
+The core logic was previously validated in a local environment. This repository represents a refactor into a ready MVP(work in progress).
 
 ## Tech Stack
 * **Language:** Python 3.10+
