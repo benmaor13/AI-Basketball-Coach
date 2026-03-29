@@ -23,7 +23,6 @@ class GameState(BaseModel):
         ...,
         description="Indicates the game location. 'Home' means playing at the home_team's arena."
     )
-    # בתוך ה-class GameState
     target_team: Literal["Home", "Away"] = Field(
         default="Home",
         description="The team the AI is currently coaching."
