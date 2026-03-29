@@ -3,11 +3,7 @@ from app.models.game_state import GameState
 from app.models.analysis_result import AnalysisReport
 from app.agents.analyze_part import AnalystAgent
 from pydantic import BaseModel
-
 class HealthResponse(BaseModel):
-    """
-    Structure of the response to the "health check"
-    """
     status: str
     system: str
     agent_model: str
@@ -17,7 +13,7 @@ app = FastAPI(
     version="1.0.0"
 )
 agent = AnalystAgent()
-@app.get("/", response_model=HealthResponse)
+@app.get("/")
 async def health_check():
     """Server  check"""
     return {

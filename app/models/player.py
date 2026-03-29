@@ -3,6 +3,9 @@ from typing import Literal
 
 
 class Player(BaseModel):
+    """
+    properties of a specific player
+    """
     # Identity fields
     name: str = Field(
         ...,
@@ -44,8 +47,8 @@ class Player(BaseModel):
     )
     fatigue_level: Literal["Fresh", "Normal", "Tired", "Exhausted", "Injured"] = Field(
         default="Fresh",
-        description="describe the fatigue level (also you can enter Injured)",
-        json_schema_extra = {"example": 12}
+        description="describe the fatigue level(Fresh, Normal , Tired ,Exhausted ,Injured)",
+        json_schema_extra={"example": 12}
     )
     current_fouls: int = Field(
         default=0,
@@ -69,11 +72,9 @@ class Player(BaseModel):
     @computed_field
     @property
     def field_goal_percentage(self) -> float:
-        total_attempted = self.field_goals_attempted + self.three_pointers_attempted
-        if total_attempted == 0:
+        if self.field_goals_attempted == 0:
             return 0.0
-        total_made = self.field_goals_made + self.three_pointers_made
-        return round((total_made / total_attempted) * 100, 1)
+        return round((self.field_goals_made / self.field_goals_attempted) * 100, 1)
 
     @computed_field
     @property
@@ -88,3 +89,16 @@ class Player(BaseModel):
         if self.free_throws_attempted == 0:
             return 0.0
         return round((self.free_throws_made / self.free_throws_attempted) * 100, 1)
+
+    @computed_field
+    @property
+    def efficiency_score(self) -> int:
+        """
+        calculation of the efficiency of the player
+        used to make the AI prompt shorter(we summarize details here)
+        """
+        points = (self.field_goals_made * 2) + self.three_pointers_made + self.free_throws_made
+        missed_shots = (self.field_goals_attempted - self.field_goals_made) + \
+                       (self.free_throws_attempted - self.free_throws_made)
+
+        return (points + self.rebounds + self.assists + self.steals + self.blocks) - (missed_shots + self.turnovers)

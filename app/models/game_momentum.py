@@ -2,6 +2,10 @@ from pydantic import BaseModel, Field, model_validator
 from typing import Literal
 
 class GameMomentum(BaseModel):
+    """
+    some properties to identify psychological effects on the game
+    like the crowd which has impact on the players.
+    """
     overall_trend: Literal["Strong Home", "Slight Home", "Neutral", "Slight Away", "Strong Away"] = Field(
         default="Neutral",
         description="Who currently controls the energy and pace of the game(from the options Strong/Slight Home and Slight/Strong Away"

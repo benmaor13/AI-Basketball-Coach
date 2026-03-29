@@ -18,10 +18,15 @@ class GameState(BaseModel):
     momentum: GameMomentum
     directives: CoachDirectives
 
-    # data about the current circumstances
+    # data about the current location of the game
     venue_type: Literal["Home", "Away", "Neutral"] = Field(
         ...,
         description="Indicates the game location. 'Home' means playing at the home_team's arena."
+    )
+    # בתוך ה-class GameState
+    target_team: Literal["Home", "Away"] = Field(
+        default="Home",
+        description="The team the AI is currently coaching."
     )
 
     home_score: int = Field(..., ge=0, description="Total points scored by the home team.")
@@ -38,17 +43,78 @@ class GameState(BaseModel):
     away_team_fouls: int = Field(default=0, ge=0)
 
     @model_validator(mode='after')
+    @model_validator(mode='after')
     def validate_game_logic(self) -> 'GameState':
         if self.minutes_remaining > self.rules.period_length_minutes:
             raise ValueError(
                 f"Minutes remaining ({self.minutes_remaining}) cannot exceed "
                 f"league period duration ({self.rules.period_length_minutes})"
             )
-
         if self.home_timeouts_remaining > self.rules.max_timeouts:
-            raise ValueError(f"Home team has more timeouts than allowed")
-
+            raise ValueError("Home team has more timeouts than allowed")
+        max_fouls = self.rules.max_fouls_per_player
+        for team in [self.home_team, self.away_team]:
+            for player in team.players:
+                if player.current_fouls > max_fouls:
+                    raise ValueError(
+                        f"Data Error: Player '{player.name}' ({team.name}) has {player.current_fouls} fouls, "
+                        f"but the league maximum is {max_fouls}."
+                    )
         return self
+    def to_ai_summary(self) -> str:
+        """
+        creates a string with the most important
+         information to send to the AI
+         todo tomorrow: integrating the much improved logic in the tablet to the code
+        """
+        summary_lines = []
+        # 1. Score and Time
+        summary_lines.append("--- Game Situation ---")
+        summary_lines.append(
+            f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name}")
+        summary_lines.append(
+            f"Time: {self.minutes_remaining}:{self.seconds_remaining:02d} left in Quarter {self.current_period}")
+        summary_lines.append(f"Possession: {self.possession}")
+        summary_lines.append("")  # Empty line for spacing
+        # 2. Foul Trouble (Checking who is 1 foul away from max fouls)
+        foul_limit = self.rules.max_fouls_per_player
+        at_risk_players = []
+
+        for team in [self.home_team, self.away_team]:
+            for player in team.players:
+                if player.current_fouls >= foul_limit - 1:
+                    at_risk_players.append(f"{player.name} ({player.current_fouls}/{foul_limit} fouls)")
+        if at_risk_players:
+            summary_lines.append(f"Foul Trouble: {', '.join(at_risk_players)}")
+            summary_lines.append("")
+        # 3. Momentum and Directives
+        summary_lines.append(f"Momentum: {self.momentum.overall_trend}")
+        summary_lines.append(
+            f"Strategy: {self.directives.primary_strategy} | Defense: {self.directives.defensive_focus}")
+        summary_lines.append("")
+
+        # 4. Top Scorers (Simple calculation of points)
+        def get_top_scorer(team: Team) -> str:
+            best_player = None
+            max_points = -1
+            for player in team.players:
+                # Calculating standard basketball points
+                two_pointers = player.field_goals_made - player.three_pointers_made
+                points = (two_pointers * 2) + (player.three_pointers_made * 3) + player.free_throws_made
+
+                if points > max_points:
+                    max_points = points
+                    best_player = player
+            if best_player:
+                return f"{best_player.name} ({max_points} pts)"
+            return "No data"
+
+        summary_lines.append("Top Scorers:")
+        summary_lines.append(f"- {self.home_team.name}: {get_top_scorer(self.home_team)}")
+        summary_lines.append(f"- {self.away_team.name}: {get_top_scorer(self.away_team)}")
+
+        # Join everything into one text block
+        return "\n".join(summary_lines)
 
     model_config = ConfigDict(
         json_schema_extra={

@@ -8,7 +8,7 @@ class TacticalAction(BaseModel):
     # Required Fields
     action_type: Literal["Substitution", "Timeout", "Defensive Shift", "Pace Adjustment", "Playcall"] = Field(
         ...,
-        description="The tactical category of the move. Options: 'Substitution', 'Timeout', 'Defensive Shift', 'Pace Adjustment', 'Playcall'.",
+        description="The tactical category of the move. Options: 'Substitution', 'Timeout', 'Defensive Shift', 'Pace Adjustment'.",
         json_schema_extra={"example": "Substitution"}
     )
 
