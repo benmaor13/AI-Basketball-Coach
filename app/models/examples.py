@@ -1,4 +1,3 @@
-
 GAME_STATE_EXAMPLE = {
     "venue_type": "Home",
     "home_score": 88,
@@ -29,7 +28,7 @@ GAME_STATE_EXAMPLE = {
         "crowd_intensity": "Electric"
     },
     "directives": {
-        "primary_strategy": "Pace and Space",
+        "offensive_strategy": "Pace and Space",
         "defensive_focus": "Force Turnovers",
         "risk_tolerance": "High",
         "game_objective": "Win at all costs"
@@ -44,16 +43,71 @@ GAME_STATE_EXAMPLE = {
         "team_fouls": 3,
         "upcoming_schedule_density": "High",
         "players": [
-            {"name": "Noam", "number": 7, "age": 24, "position": "PG", "is_on_court": True, "current_fouls": 2, "minutes_played": 32, "fatigue_level": "Normal", "field_goals_made": 5, "field_goals_attempted": 10, "three_pointers_made": 2, "three_pointers_attempted": 4, "free_throws_made": 4, "free_throws_attempted": 4, "rebounds": 3, "assists": 8, "steals": 2, "blocks": 0, "turnovers": 3, "position_rank": 1}
-            # ... שאר השחקנים ...
+            {
+                "name": "Noam",
+                "number": 7,
+                "age": 24,
+                "position": "PG",
+                "is_on_court": True,
+                "style": "Floor General",
+                "season_ft_pct": 88,
+                "current_stint_minutes": 6.5,
+                "current_fouls": 2,
+                "minutes_played": 32,
+                "fatigue_level": "Normal",
+                "field_goals_made": 5,
+                "field_goals_attempted": 10,
+                "three_pointers_made": 2,
+                "three_pointers_attempted": 4,
+                "free_throws_made": 4,
+                "free_throws_attempted": 4,
+                "rebounds": 3,
+                "assists": 8,
+                "steals": 2,
+                "blocks": 0,
+                "turnovers": 3,
+                "position_rank": 1
+            }
         ]
     },
     "away_team": {
         "name": "Away Town Ballers",
-        # ... שאר הנתונים ...
+        "league_position": 3,
+        "win_streak": -1,
+        "offensive_rank": 5,
+        "defensive_rank": 2,
+        "timeouts_remaining": 1,
+        "team_fouls": 5,
+        "upcoming_schedule_density": "Medium",
+        "players": [
+            {
+                "name": "John Doe",
+                "number": 30,
+                "age": 26,
+                "position": "SG",
+                "is_on_court": True,
+                "style": "Sharpshooter",
+                "season_ft_pct": 92,
+                "current_stint_minutes": 8.0,
+                "current_fouls": 4,
+                "minutes_played": 28,
+                "fatigue_level": "Tired",
+                "field_goals_made": 8,
+                "field_goals_attempted": 15,
+                "three_pointers_made": 4,
+                "three_pointers_attempted": 8,
+                "free_throws_made": 2,
+                "free_throws_attempted": 2,
+                "rebounds": 2,
+                "assists": 4,
+                "steals": 1,
+                "blocks": 0,
+                "turnovers": 2,
+                "position_rank": 1
+            }
+        ]
     }
 }
-# app/schemas/examples.py
 
 ANALYSIS_REPORT_EXAMPLE = {
     "summary": "Home team is leading by 6 with under 4 minutes left. The momentum is positive, but the away team's point guard is exploiting the drop coverage.",

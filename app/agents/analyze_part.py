@@ -18,7 +18,7 @@ class AnalystAgent:
         """
         try:
             # Step 1: Serialize the incoming Pydantic model
-            game_data_json = state.model_dump_json(indent=2)
+            game_summary_text = GameState.to_ai_summary()
             # Step 2: Return a professional mock response for pipeline validation
             report = self._get_mock_report()
 

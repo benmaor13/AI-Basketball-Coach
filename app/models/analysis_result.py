@@ -6,29 +6,34 @@ class TacticalAction(BaseModel):
     """
     Represents a single, concrete tactical recommendation from the AI.
     """
-    # הרחבנו את סוגי הפעולות שיתאימו להתראות ולאסטרטגיות החדשות שלנו
+    reasoning: str = Field(
+        ...,
+        description="Chain of thought: Explain exactly why this action is taken based on stats (EFF, Fatigue, Fouls) or rules (e.g., respecting the 'JUST SUBBED IN' cooldown). This must be formulated BEFORE choosing the action.",
+        json_schema_extra={"example": "Player #13 is 'Exhausted' and we are in 'CLUTCH TIME', making him a defensive liability."}
+    )
+
     action_type: Literal[
         "Substitution",
         "Timeout",
-        "Defensive Scheme Adjustment",
+        "Defensive Adjustment",
         "Offensive Focus Shift",
         "Pace Management",
         "Foul Strategy"
     ] = Field(
         ...,
-        description="The tactical category of the move. Choose the ONE that best addresses the current situation and coach directives.",
+        description="The tactical category. Must align with the actionable alerts in the summary (e.g., [Requires Substitution]).",
         json_schema_extra={"example": "Substitution"}
     )
 
     description: str = Field(
         ...,
         description="Clear, concise instruction for the coach (e.g., 'Sub out #13 for #22', 'Start blitzing the pick and roll').",
-        json_schema_extra={"example": "Sub out Player #13 and bring in #22 to match the 'Protect the Paint' directive."}
+        json_schema_extra={"example": "Sub out Player #13 and bring in #22 to improve perimeter defense."}
     )
 
     expected_impact: str = Field(
         ...,
-        description="The immediate tactical benefit expected, referencing specific stats (EFF, Fouls) or momentum.",
+        description="The immediate tactical benefit expected from this action.",
         json_schema_extra={"example": "Will improve rim protection and stop the opponent's 8-0 run in the paint."}
     )
 
@@ -40,7 +45,7 @@ class TacticalAction(BaseModel):
 
     involved_player_numbers: List[int] = Field(
         default_factory=list,
-        description="Jersey numbers involved. Substitution: [OUT, IN]. Focus/Shift: [Target]. Empty if general team action.",
+        description="Jersey numbers involved. For Substitution STRICTLY use format: [OUT_PLAYER_NUMBER, IN_PLAYER_NUMBER]. Empty if general team action.",
         json_schema_extra={"example": [13, 22]}
     )
 
@@ -51,20 +56,20 @@ class AnalysisReport(BaseModel):
     """
     summary: str = Field(
         ...,
-        description="Concise overview of current game flow, heavily weighting the [MOMENTUM & STRATEGY] and [GAME CONTEXT] blocks.",
-        json_schema_extra={"example": "We are leading by 6, but the opponent is in the penalty and adapting to our drop coverage."}
+        description="Concise overview of current game flow, integrating the Game Phase (e.g., CLUTCH TIME) and overall momentum.",
+        json_schema_extra={"example": "We are leading by 6 in CLUTCH TIME, but the opponent is in the penalty and adapting to our drop coverage."}
     )
 
     main_threat: str = Field(
         ...,
-        description="The most critical challenge identified from the [OPPONENT THREAT] or [ACTIONABLE ALERTS].",
+        description="The most critical challenge identified from the [OPPONENT THREAT ON COURT] or [ACTIONABLE ALERTS].",
         json_schema_extra={"example": "Our primary center has 4 fouls and is exhausted, risking our 'Protect the Paint' strategy."}
     )
 
     recommended_actions: List[TacticalAction] = Field(
         ...,
         min_length=1,
-        max_length=4, # הגבלה חשובה כדי שהמאמן לא יקבל מגילה של 10 פעולות
+        max_length=4,
         description="A prioritized list of concrete moves to counter the threat, strictly adhering to the Coach's Risk Tolerance and Game Objective."
     )
 

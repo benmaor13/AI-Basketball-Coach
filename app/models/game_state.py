@@ -127,6 +127,11 @@ class GameState(BaseModel):
             lead_status = f"{leader} leads by {score_diff}"
         # creating the main context to the AI
         summary.append("[GAME CONTEXT]")
+
+        # Explicit Semantic Trigger for the AI regarding Game Phase
+        game_phase = "CLUTCH TIME" if is_clutch_time else "Late Close Game" if is_late_close_game else "Regular Flow"
+        summary.append(f"Game Phase: {game_phase}")
+
         # score
         summary.append(
             f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name} ({lead_status})")
@@ -166,9 +171,12 @@ class GameState(BaseModel):
         # we do not add player who are injured or exceeded the foul limit
         available_bench = [p for p in my_team.players if
                            not p.is_on_court and p.fatigue_level != "Injured" and p.current_fouls < self.rules.max_fouls_per_player]
-        if available_bench:
+
+        # Sorting bench to prevent LLM Position Bias
+        available_bench_sorted = sorted(available_bench, key=lambda p: (p.position_rank, -p.efficiency_score))
+        if available_bench_sorted:
             summary.append("\n[AVAILABLE BENCH PERSONNEL]")
-            for p in available_bench:
+            for p in available_bench_sorted:
                 summary.append(f"- {fmt_p(p)}")
 
         # making sure the AI knows why certain players are missing from the bench options
@@ -192,53 +200,57 @@ class GameState(BaseModel):
         opp_foul_trouble = [f"{p.name} (#{p.number}) ({p.current_fouls} fouls)" for p in opp_team.active_lineup
                             if p.current_fouls >= (self.rules.max_fouls_per_player - 2)]
         if opp_foul_trouble:
-            alarms.append(f"OPPONENT VULNERABILITY: Attack {', '.join(opp_foul_trouble)} to force disqualification!")
+            alarms.append(
+                f"[Consider Foul Strategy] OPPONENT VULNERABILITY: Attack {', '.join(opp_foul_trouble)} to force disqualification!")
 
         # injured players still on the court must be subbed out immediately
         injured_on_court = [f"{p.name} (#{p.number})" for p in my_team.active_lineup if p.fatigue_level == "Injured"]
         if injured_on_court:
             alarms.append(
-                f"MANDATORY SUB: {', '.join(injured_on_court)} are INJURED and must be subbed out immediately!")
+                f"[Requires Substitution] MANDATORY SUB: {', '.join(injured_on_court)} are INJURED and must be subbed out immediately!")
         # noticeable alert when the best player on the court is tired
         for p in my_team.active_lineup:
             if p.position_rank == 1:
                 if p.current_fouls >= (self.rules.max_fouls_per_player - 1):
-                    alarms.append(f"STAR IN FOUL TROUBLE: {p.name} (#{p.number}) has {p.current_fouls} fouls!")
+                    alarms.append(
+                        f"[Risk Warning] STAR IN FOUL TROUBLE: {p.name} (#{p.number}) has {p.current_fouls} fouls!")
                 if p.fatigue_level in ["Tired", "Exhausted"]:
-                    alarms.append(f"STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}.")
+                    alarms.append(f"[Risk Warning] STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}.")
         # list of the tired players on the court
         exhausted = [f"{p.name} (#{p.number})" for p in my_team.active_lineup if
                      p.fatigue_level in ["Tired", "Exhausted"] and p.position_rank > 1]
         if exhausted:
-            alarms.append(f"FATIGUE: {', '.join(exhausted)} are tired.")
+            alarms.append(f"[Requires Substitution] FATIGUE: {', '.join(exhausted)} are tired.")
         # players who have "foul trouble", while taking into account current part of the game
         foul_threshold_diff = 3 if is_first_half else 1
         foul_threshold = self.rules.max_fouls_per_player - foul_threshold_diff
         foul_trouble = [f"{p.name} (#{p.number}) ({p.current_fouls})" for p in my_team.active_lineup
                         if p.current_fouls >= foul_threshold and p.position_rank > 1]
         if foul_trouble:
-            alarms.append(f"FOUL TROUBLE: {', '.join(foul_trouble)}")
+            alarms.append(f"[Requires Substitution] FOUL TROUBLE: {', '.join(foul_trouble)}")
         # alert when the other team exceeded the foul limit
         if opp_team.team_fouls >= self.rules.team_fouls_to_penalty:
-            alarms.append("TACTICAL ADVANTAGE: Opponent in PENALTY. Attack the paint to draw fouls!")
+            alarms.append(
+                "[Offensive Focus Shift] TACTICAL ADVANTAGE: Opponent in PENALTY. Attack the paint to draw fouls!")
         # alert when out team exceeded the foul limit
         if my_team.team_fouls >= self.rules.team_fouls_to_penalty:
-            alarms.append("DANGER: We are in the PENALTY. Play clean defense!")
+            alarms.append("[Defensive Scheme Adjustment] DANGER: We are in the PENALTY. Play clean defense!")
         # using the last timeout smartly and also avoiding a technical foul by calling timeout when 0 remaining
         if my_team.timeouts_remaining == 1:
-            alarms.append("CRITICAL: 1 timeouts left! Use carefully.")
+            alarms.append("[Timeout Warning] CRITICAL: 1 timeouts left! Use carefully.")
         if my_team.timeouts_remaining == 0:
-            alarms.append("CRITICAL: 0 timeouts left! Do Not Call timeout anymore!.")
+            alarms.append("[Timeout Warning] CRITICAL: 0 timeouts left! Do Not Call timeout anymore!.")
         if alarms:
             summary.append("\n[ACTIONABLE ALERTS]")
             for alarm in alarms:
                 summary.append(f"- {alarm}")
         # the young age matters when the coach wants to develop young players
         if "Develop Youth" in objective:
-            young_bench = [f"{p.name} (#{p.number})" for p in available_bench if p.age < 25]
+            young_bench = [f"{p.name} (#{p.number})" for p in available_bench_sorted if p.age < 25]
             if young_bench:
                 summary.append("\n[DEVELOPMENT OPPORTUNITY]")
-                summary.append(f"Mandatory priority: Sub in these U25 players: {', '.join(young_bench)}")
+                summary.append(
+                    f"[Requires Substitution] Mandatory priority: Sub in these U25 players: {', '.join(young_bench)}")
 
         return "\n".join(summary)
 

@@ -11,7 +11,7 @@ Always strictly adhere to the requested JSON structure.
 
 USER_PROMPT_TEMPLATE = """
 Current Game State:
-{game_state_json}
+{game_summary_text}
 
 Based on the rules and current momentum, provide your tactical AnalysisReport.
 """
