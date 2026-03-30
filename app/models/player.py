@@ -36,7 +36,24 @@ class Player(BaseModel):
         description="Rank in this position from all team players (1 is best)",
         json_schema_extra={"example": 1}
     )
-
+    style: Literal[
+        "Sharpshooter",
+        "Slasher",
+        "Floor General",
+        "Post Threat",
+        "Rim Protector",
+        "Wing Defender",
+        "Versatile"
+    ] = Field(
+        ...,
+        description="The player's tactical archetype. Tells the AI the player's 'DNA' and primary role on the court.",
+        json_schema_extra={"example": "Sharpshooter"}
+    )
+    # seasonal ft percentage (is not updated during the game for now)
+    season_ft_pct: int = Field(
+        ..., ge=0, le=100,
+        description="Season average free throw percentage. Used to adapy the players on the court to coach's directive"
+    )
     # real time data
     is_on_court: bool = Field(default=False)
     minutes_played: int = Field(
@@ -44,6 +61,10 @@ class Player(BaseModel):
         ge=0,
         le=48,
         json_schema_extra={"example": 12}
+    )
+    current_stint_minutes: float = Field(
+        default=0.0,
+        description="Minutes played continuously since last subbed in. Used to prevent rapid 'yo-yo' subs."
     )
     fatigue_level: Literal["Fresh", "Normal", "Tired", "Exhausted", "Injured"] = Field(
         default="Fresh",
@@ -56,6 +77,7 @@ class Player(BaseModel):
         le=6,
         json_schema_extra={"example": 2}
     )
+    # fields used to calculate the efficiency of the player(live stats and not season average)
     field_goals_made: int = Field(default=0, ge=0)
     field_goals_attempted: int = Field(default=0, ge=0)
     three_pointers_made: int = Field(default=0, ge=0)

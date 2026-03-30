@@ -10,14 +10,14 @@ class GameMomentum(BaseModel):
         default="Neutral",
         description="Who currently controls the energy and pace of the game(from the options Strong/Slight Home and Slight/Strong Away"
     )
-
+    # used to validate the overall_trend
     home_team_run: int = Field(
         default=0,
         ge=0,
         description="current streak of points by the home team when the away team did not score",
         json_schema_extra={"example": 8}
     )
-
+    # used to validate the overall_trend
     away_team_run: int = Field(
         default=0,
         ge=0,

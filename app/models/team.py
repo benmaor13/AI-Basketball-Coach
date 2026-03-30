@@ -61,10 +61,9 @@ class Team(BaseModel):
     team_fouls: int = Field(
         default=0,
         ge=0,
-        description="Total team fouls committed in the current quarter.",
+        description="Total team fouls committed in the current period.",
         json_schema_extra={"example": 2}
     )
-
 
     upcoming_schedule_density: Literal["Low", "Medium", "High"] = Field(
         default="Medium",
