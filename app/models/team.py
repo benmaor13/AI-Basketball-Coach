@@ -88,7 +88,7 @@ class Team(BaseModel):
         ensures exactly 5 players on the court
         """
         # counting the number of players on the court
-        active_count = sum(1 for p in self.players if p.is_on_court)
+        active_count = len(self.active_lineup)
         # handling the case of a wrong number
         if active_count != 5:
             raise ValueError(

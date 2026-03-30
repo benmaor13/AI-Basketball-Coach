@@ -1,12 +1,13 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Literal, Optional
+from typing import List, Literal
+from .examples import ANALYSIS_REPORT_EXAMPLE
 
 class TacticalAction(BaseModel):
     """
     Represents a single, concrete tactical recommendation from the AI.
     """
     # Required Fields
-    action_type: Literal["Substitution", "Timeout", "Defensive Shift", "Pace Adjustment", "Playcall"] = Field(
+    action_type: Literal["Substitution", "Timeout", "Defensive Shift", "Pace Adjustment","Offensive Focus"] = Field(
         ...,
         description="The tactical category of the move. Options: 'Substitution', 'Timeout', 'Defensive Shift', 'Pace Adjustment'.",
         json_schema_extra={"example": "Substitution"}
@@ -33,7 +34,7 @@ class TacticalAction(BaseModel):
 
     involved_player_numbers: List[int] = Field(
         default_factory=list,
-        description="Jersey numbers of players involved. For substitutions, first is OUT, second is IN.",
+        description="Jersey numbers of players involved. For Substitution: [OUT_player, IN_player]. For Focus/Shift: [Target_player]. Empty if general team action.",
         json_schema_extra={"example": [13, 22]}
     )
 
@@ -78,28 +79,5 @@ class AnalysisReport(BaseModel):
 
     # config for better experience in swagger and also for better AI performance
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "summary": "Home team is leading by 6 with under 4 minutes left. The momentum is positive, but the away team's point guard is exploiting the drop coverage.",
-                "main_threat": "Away team's #30 is scoring easily off high pick-and-rolls due to a lack of aggressive defensive pressure.",
-                "recommended_actions": [
-                    {
-                        "action_type": "Defensive Shift",
-                        "description": "Switch from drop coverage to blitzing the pick-and-roll against #30.",
-                        "expected_impact": "Force the ball out of the primary scorer's hands and make their role players beat you.",
-                        "priority": "High",
-                        "involved_player_numbers": [23, 1]
-                    },
-                    {
-                        "action_type": "Substitution",
-                        "description": "Sub out tired big man #15 for quicker defender #8.",
-                        "expected_impact": "Better mobility to execute the blitz and recover to the perimeter.",
-                        "priority": "Medium",
-                        "involved_player_numbers": [15, 8]
-                    }
-                ],
-                "risk_assessment": "Blitzing will leave the roll man temporarily open, requiring perfect weak-side rotations to prevent easy layups.",
-                "confidence_score": 0.92
-            }
-        }
+        json_schema_extra={"example": ANALYSIS_REPORT_EXAMPLE}
     )

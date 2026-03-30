@@ -5,6 +5,7 @@ from .team import Team
 from .league_rules import LeagueRules
 from .game_momentum import GameMomentum
 from .coach_directives import CoachDirectives
+from .examples import GAME_STATE_EXAMPLE
 
 
 class GameState(BaseModel):
@@ -42,150 +43,167 @@ class GameState(BaseModel):
     away_team_fouls: int = Field(default=0, ge=0)
 
     @model_validator(mode='after')
-    @model_validator(mode='after')
     def validate_game_logic(self) -> 'GameState':
-        if self.minutes_remaining > self.rules.period_length_minutes:
+        """
+        Validates the integrity of the game state, including timeouts,
+        period timing (handling overtime), and foul rules.
+        """
+        # Timeouts Validation
+        if self.home_timeouts_remaining > self.rules.max_timeouts or \
+                self.away_timeouts_remaining > self.rules.max_timeouts:
+            raise ValueError(f"A team cannot have more than {self.rules.max_timeouts} timeouts.")
+
+        # Period and Time Validation (Handling Overtime vs. Regular periods)
+        is_overtime = self.current_period > self.rules.number_of_periods
+        max_minutes_for_period = self.rules.overtime_length_minutes if is_overtime else self.rules.period_length_minutes
+
+        if self.minutes_remaining > max_minutes_for_period:
             raise ValueError(
-                f"Minutes remaining ({self.minutes_remaining}) cannot exceed "
-                f"league period duration ({self.rules.period_length_minutes})"
+                f"Invalid time: Minutes remaining ({self.minutes_remaining}) cannot exceed "
+                f"the maximum length for period {self.current_period} ({max_minutes_for_period} mins)."
             )
-        if self.home_timeouts_remaining > self.rules.max_timeouts:
-            raise ValueError("Home team has more timeouts than allowed")
+
+        # Foul Validation (Data Integrity vs. Game Logic)
         max_fouls = self.rules.max_fouls_per_player
         for team in [self.home_team, self.away_team]:
             for player in team.players:
+                # a player cannot have more that the maximum fouls
                 if player.current_fouls > max_fouls:
                     raise ValueError(
                         f"Data Error: Player '{player.name}' ({team.name}) has {player.current_fouls} fouls, "
-                        f"but the league maximum is {max_fouls}."
+                        f"which exceeds the absolute league limit of {max_fouls}."
                     )
+                # a player that plays now must have less fouls than the maximum
+                if player.is_on_court and player.current_fouls >= max_fouls:
+                    raise ValueError(
+                        f"Game Logic Error: Player '{player.name}' is on court but has already "
+                        f"fouled out ({player.current_fouls}/{max_fouls} fouls)."
+                    )
+
         return self
+
     def to_ai_summary(self) -> str:
         """
-        creates a string with the most important
-         information to send to the AI
-         todo tomorrow: integrating the much improved logic in the tablet to the code
+        Sending the AI relevant information in a way it will give the most accurate answer
+        and also making it shorter as possible to save tokens and minimize unrelevant info that can
+        make the AI hallucinate
         """
-        summary_lines = []
-        # 1. Score and Time
-        summary_lines.append("--- Game Situation ---")
-        summary_lines.append(
-            f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name}")
-        summary_lines.append(
-            f"Time: {self.minutes_remaining}:{self.seconds_remaining:02d} left in Quarter {self.current_period}")
-        summary_lines.append(f"Possession: {self.possession}")
-        summary_lines.append("")  # Empty line for spacing
-        # 2. Foul Trouble (Checking who is 1 foul away from max fouls)
-        foul_limit = self.rules.max_fouls_per_player
-        at_risk_players = []
+        # Helper function to ensure unique player identification
+        def fmt_p(p) -> str:
+            return f"{p.name} (#{p.number})"
 
-        for team in [self.home_team, self.away_team]:
-            for player in team.players:
-                if player.current_fouls >= foul_limit - 1:
-                    at_risk_players.append(f"{player.name} ({player.current_fouls}/{foul_limit} fouls)")
-        if at_risk_players:
-            summary_lines.append(f"Foul Trouble: {', '.join(at_risk_players)}")
-            summary_lines.append("")
-        # 3. Momentum and Directives
-        summary_lines.append(f"Momentum: {self.momentum.overall_trend}")
-        summary_lines.append(
-            f"Strategy: {self.directives.primary_strategy} | Defense: {self.directives.defensive_focus}")
-        summary_lines.append("")
+        summary = []
+        # which team is the coach's team
+        my_team = self.home_team if self.target_team == "Home" else self.away_team
+        opp_team = self.away_team if self.target_team == "Home" else self.home_team
+        # giving the AI info about the score situation with minimum letters
+        score_diff = abs(self.home_score - self.away_score)
+        if self.home_score == self.away_score:
+            lead_status = "Game is TIED"
+        else:
+            leader = self.home_team.name if self.home_score > self.away_score else self.away_team.name
+            lead_status = f"{leader} leads by {score_diff}"
+        is_overtime = self.current_period > self.rules.number_of_periods
+        is_last_period = self.current_period >= self.rules.number_of_periods
+        # indicates if we are during the first half of total time to play
+        is_first_half = self.current_period <= (self.rules.number_of_periods / 2)
+        # specific indicator to the last 30 seconds of a game part
+        end_of_period = (self.minutes_remaining == 0 and self.seconds_remaining <= 30)
+        # indicator to the end of a tight game. will be used to-
+        is_clutch_time = (is_last_period and self.minutes_remaining < 2 and score_diff < 6)
+        # another indicator that will be used to indicate when the possession matters
+        is_late_close_game = (is_last_period and self.minutes_remaining < 4 and score_diff < 10)
+        completed_periods = self.current_period - 1
+        reg_periods_completed = min(completed_periods, self.rules.number_of_periods)
+        ot_periods_completed = max(0, completed_periods - self.rules.number_of_periods)
+        elapsed_minutes = (reg_periods_completed * self.rules.period_length_minutes) + \
+                          (ot_periods_completed * self.rules.overtime_length_minutes)
+        current_period_max = self.rules.overtime_length_minutes if is_overtime else self.rules.period_length_minutes
+        elapsed_minutes += (current_period_max - self.minutes_remaining - (self.seconds_remaining / 60))
+        summary.append("[GAME CONTEXT]")
+        summary.append(
+            f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name} ({lead_status})")
+        summary.append(
+            f"Time: Period {self.current_period}, {self.minutes_remaining}:{self.seconds_remaining:02d} left")
+        summary.append(f"Coach Timeouts left: {my_team.timeouts_remaining}")
+        summary.append(f"Upcoming Schedule Density: {my_team.upcoming_schedule_density}")
+        # possession matters during clutch time
+        if end_of_period or is_clutch_time:
+            summary.append(f"Possession: {self.possession}")
+        # during the last period when the difference is small the venue matters to decision making
+        if is_last_period and score_diff < 10:
+            summary.append(f"Venue: {self.venue_type} (Coaching {self.target_team})")
+        summary.append("\n[MOMENTUM & STRATEGY]")
+        summary.append(f"Trend: {self.momentum.overall_trend}")
+        # crowd affects the game especially during the last period when the difference is small
+        if is_last_period and score_diff < 10:
+            summary.append(f"Crowd Intensity: {self.momentum.crowd_intensity}")
 
-        # 4. Top Scorers (Simple calculation of points)
-        def get_top_scorer(team: Team) -> str:
-            best_player = None
-            max_points = -1
-            for player in team.players:
-                # Calculating standard basketball points
-                two_pointers = player.field_goals_made - player.three_pointers_made
-                points = (two_pointers * 2) + (player.three_pointers_made * 3) + player.free_throws_made
+        summary.append(f"Caoch Directives: {self.directives.primary_strategy} | Defensive Focus: {self.directives.defensive_focus}")
 
-                if points > max_points:
-                    max_points = points
-                    best_player = player
-            if best_player:
-                return f"{best_player.name} ({max_points} pts)"
-            return "No data"
 
-        summary_lines.append("Top Scorers:")
-        summary_lines.append(f"- {self.home_team.name}: {get_top_scorer(self.home_team)}")
-        summary_lines.append(f"- {self.away_team.name}: {get_top_scorer(self.away_team)}")
+        summary.append("\n[ON COURT PERSONNEL]")
+        for p in my_team.active_lineup:
+            age_info = f", Age: {p.age}" if is_late_close_game else ""
+            summary.append(f"- {fmt_p(p)} (EFF: {p.efficiency_score}, Fatigue: {p.fatigue_level}{age_info})")
 
-        # Join everything into one text block
-        return "\n".join(summary_lines)
+
+        if opp_team.active_lineup:
+            top_threat = max(opp_team.active_lineup, key=lambda p: p.efficiency_score)
+            summary.append(f"\n[OPPONENT THREAT ON COURT]")
+            summary.append(
+                f"- {fmt_p(top_threat)} (EFF: {top_threat.efficiency_score}, Fouls: {top_threat.current_fouls})")
+
+
+        alarms = []
+        unavailable_players = [fmt_p(p) for p in my_team.players if
+                               p.fatigue_level == "Injured" or p.current_fouls >= self.rules.max_fouls_per_player]
+        if unavailable_players:
+            alarms.append(f"UNAVAILABLE (Injured/Fouled Out): {', '.join(unavailable_players)}")
+
+
+        exhausted = [fmt_p(p) for p in my_team.active_lineup if p.fatigue_level in ["Tired", "Exhausted"]]
+        if exhausted:
+            alarms.append(f"CRITICAL FATIGUE: {', '.join(exhausted)} need rest!")
+
+
+        foul_threshold_diff = 3 if is_first_half else 1
+        foul_threshold = self.rules.max_fouls_per_player - foul_threshold_diff
+        foul_trouble = [f"{fmt_p(p)} ({p.current_fouls}/{self.rules.max_fouls_per_player} fouls)" for p in my_team.players
+                        if p.current_fouls >= foul_threshold and p.current_fouls < self.rules.max_fouls_per_player]
+        if foul_trouble:
+            alarms.append(f"FOUL TROUBLE RISK: {', '.join(foul_trouble)}")
+
+
+        if opp_team.team_fouls >= self.rules.team_fouls_to_penalty:
+            alarms.append("TACTICAL ADVANTAGE: Opponent is in the PENALTY. We shoot free throws on every foul!")
+        if my_team.team_fouls >= self.rules.team_fouls_to_penalty:
+            alarms.append("DANGER: We are in the PENALTY. Defend without fouling!")
+
+
+        if is_clutch_time and my_team.timeouts_remaining == 0:
+            alarms.append("CRITICAL: 0 timeouts remaining in clutch time!")
+
+        if alarms:
+            summary.append("\n[ACTIONABLE ALERTS]")
+            for alarm in alarms:
+                summary.append(f"- {alarm}")
+
+        # if the coach wants to develop young players we will send the ones who played less than 30 percents of the game
+        if getattr(self.directives, 'game_objective', '') == "Develop Young Players" and elapsed_minutes > 0:
+            young_bench = [
+                fmt_p(p) for p in my_team.players
+                if not p.is_on_court
+                   and p.age < 25
+                   and p.minutes_played < (0.3 * elapsed_minutes)
+                   and p.fatigue_level != "Injured"
+            ]
+            if young_bench:
+                summary.append("\n[DEVELOPMENT OPPORTUNITY]")
+                summary.append(f"Consider subbing in young players (played <30% of game): {', '.join(young_bench)}")
+
+        return "\n".join(summary)
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "venue_type": "Home",
-                "home_score": 88,
-                "away_score": 82,
-                "current_period": 4,
-                "minutes_remaining": 3,
-                "seconds_remaining": 45,
-                "possession": "Home",
-                "home_timeouts_remaining": 2,
-                "away_timeouts_remaining": 1,
-                "home_team_fouls": 3,
-                "away_team_fouls": 5,
-                "rules": {
-                    "league_format": "FIBA",
-                    "number_of_periods": 4,
-                    "period_length_minutes": 10,
-                    "overtime_length_minutes": 5,
-                    "max_fouls_per_player": 5,
-                    "team_fouls_to_penalty": 4,
-                    "shot_clock_seconds": 24,
-                    "offensive_rebound_reset_seconds": 14,
-                    "max_timeouts": 5
-                },
-                "momentum": {
-                    "overall_trend": "Strong Home",
-                    "home_team_run": 8,
-                    "away_team_run": 0,
-                    "crowd_intensity": "Electric"
-                },
-                "directives": {
-                    "primary_strategy": "Pace and Space",
-                    "defensive_focus": "Force Turnovers",
-                    "risk_tolerance": "High",
-                    "game_objective": "Win at all costs"
-                },
-                "home_team": {
-                    "name": "BGU Lakers",
-                    "league_position": 1,
-                    "win_streak": 3,
-                    "offensive_rank": 2,
-                    "defensive_rank": 4,
-                    "timeouts_remaining": 2,
-                    "team_fouls": 3,
-                    "upcoming_schedule_density": "High",
-                    "players": [
-                        {"name": "Noam", "age": 24, "number": 7, "position": "PG", "is_on_court": True, "current_fouls": 2, "minutes_played": 32, "fatigue_level": "Normal", "field_goals_made": 5, "field_goals_attempted": 10, "three_pointers_made": 2, "three_pointers_attempted": 4, "free_throws_made": 4, "free_throws_attempted": 4, "rebounds": 3, "assists": 8, "steals": 2, "blocks": 0, "turnovers": 3, "position_rank": 1},
-                        {"name": "Ben", "age": 25, "number": 13, "position": "SG", "is_on_court": True, "current_fouls": 1, "minutes_played": 28, "fatigue_level": "Normal", "field_goals_made": 7, "field_goals_attempted": 14, "three_pointers_made": 4, "three_pointers_attempted": 8, "free_throws_made": 2, "free_throws_attempted": 2, "rebounds": 4, "assists": 2, "steals": 1, "blocks": 0, "turnovers": 1, "position_rank": 1},
-                        {"name": "Guy", "age": 23, "number": 23, "position": "SF", "is_on_court": True, "current_fouls": 3, "minutes_played": 30, "fatigue_level": "Normal", "field_goals_made": 4, "field_goals_attempted": 9, "three_pointers_made": 1, "three_pointers_attempted": 3, "free_throws_made": 1, "free_throws_attempted": 2, "rebounds": 6, "assists": 3, "steals": 1, "blocks": 1, "turnovers": 2, "position_rank": 1},
-                        {"name": "Dan", "age": 26, "number": 33, "position": "PF", "is_on_court": True, "current_fouls": 4, "minutes_played": 25, "fatigue_level": "Normal", "field_goals_made": 6, "field_goals_attempted": 8, "three_pointers_made": 0, "three_pointers_attempted": 0, "free_throws_made": 3, "free_throws_attempted": 5, "rebounds": 9, "assists": 1, "steals": 0, "blocks": 2, "turnovers": 1, "position_rank": 1},
-                        {"name": "Tom", "age": 22, "number": 55, "position": "C", "is_on_court": True, "current_fouls": 2, "minutes_played": 35, "fatigue_level": "Normal", "field_goals_made": 8, "field_goals_attempted": 11, "three_pointers_made": 0, "three_pointers_attempted": 0, "free_throws_made": 4, "free_throws_attempted": 6, "rebounds": 12, "assists": 2, "steals": 0, "blocks": 4, "turnovers": 2, "position_rank": 1}
-                    ]
-                },
-                "away_team": {
-                    "name": "Away Town Ballers",
-                    "league_position": 4,
-                    "win_streak": -1,
-                    "offensive_rank": 5,
-                    "defensive_rank": 10,
-                    "timeouts_remaining": 1,
-                    "team_fouls": 5,
-                    "upcoming_schedule_density": "Medium",
-                    "players": [
-                        {"name": "Alex", "age": 28, "number": 1, "position": "PG", "is_on_court": True, "current_fouls": 3, "minutes_played": 30, "fatigue_level": "Normal", "field_goals_made": 4, "field_goals_attempted": 12, "three_pointers_made": 1, "three_pointers_attempted": 5, "free_throws_made": 2, "free_throws_attempted": 2, "rebounds": 2, "assists": 6, "steals": 1, "blocks": 0, "turnovers": 4, "position_rank": 1},
-                        {"name": "Mike", "age": 27, "number": 2, "position": "SG", "is_on_court": True, "current_fouls": 2, "minutes_played": 26, "fatigue_level": "Normal", "field_goals_made": 5, "field_goals_attempted": 10, "three_pointers_made": 2, "three_pointers_attempted": 6, "free_throws_made": 0, "free_throws_attempted": 0, "rebounds": 3, "assists": 1, "steals": 0, "blocks": 0, "turnovers": 1, "position_rank": 1},
-                        {"name": "John", "age": 29, "number": 3, "position": "SF", "is_on_court": True, "current_fouls": 4, "minutes_played": 34, "fatigue_level": "Normal", "field_goals_made": 8, "field_goals_attempted": 16, "three_pointers_made": 3, "three_pointers_attempted": 7, "free_throws_made": 5, "free_throws_attempted": 6, "rebounds": 5, "assists": 4, "steals": 2, "blocks": 1, "turnovers": 3, "position_rank": 1},
-                        {"name": "Chris", "age": 24, "number": 4, "position": "PF", "is_on_court": True, "current_fouls": 5, "minutes_played": 22, "fatigue_level": "Normal", "field_goals_made": 3, "field_goals_attempted": 7, "three_pointers_made": 0, "three_pointers_attempted": 1, "free_throws_made": 1, "free_throws_attempted": 2, "rebounds": 7, "assists": 0, "steals": 0, "blocks": 0, "turnovers": 1, "position_rank": 1},
-                        {"name": "Sam", "age": 30, "number": 5, "position": "C", "is_on_court": True, "current_fouls": 3, "minutes_played": 28, "fatigue_level": "Normal", "field_goals_made": 4, "field_goals_attempted": 9, "three_pointers_made": 0, "three_pointers_attempted": 0, "free_throws_made": 2, "free_throws_attempted": 4, "rebounds": 10, "assists": 1, "steals": 1, "blocks": 2, "turnovers": 2, "position_rank": 1}
-                    ]
-                }
-            }
-        }
+        json_schema_extra={"example": GAME_STATE_EXAMPLE}
     )
