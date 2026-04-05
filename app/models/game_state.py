@@ -1,6 +1,6 @@
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator
-
+from app.core.constants import *
 from .team import Team
 from .league_rules import LeagueRules
 from .game_momentum import GameMomentum
@@ -99,8 +99,8 @@ class GameState(BaseModel):
         score_diff = abs(self.home_score - self.away_score)
         is_last_period = self.current_period >= self.rules.number_of_periods
         is_first_half = self.current_period <= (self.rules.number_of_periods / 2)
-        is_clutch_time = is_last_period and self.minutes_remaining < 2 and score_diff < 6
-        is_late_close_game = is_last_period and self.minutes_remaining < 4 and score_diff < 10
+        is_clutch_time = is_last_period and self.minutes_remaining < CLUTCH_TIME_MINUTES and score_diff < CLUTCH_TIME_MAX_SCORE_DIFF
+        is_late_close_game = is_last_period and self.minutes_remaining < LATE_GAME_MINUTES and score_diff < LATE_GAME_MAX_SCORE_DIFF
         end_of_period = self.minutes_remaining == 0 and self.seconds_remaining <= 30
 
         return {
@@ -136,7 +136,7 @@ class GameState(BaseModel):
         # Cooldown flag — prevents rapid yo-yo substitutions
         just_subbed_in = (
             p.is_on_court
-            and p.current_stint_minutes < 2.0
+            and p.current_stint_minutes < MIN_STINT_MINUTES
             and p.fatigue_level != "Injured"
             and p.current_fouls < (self.rules.max_fouls_per_player - 1)
         )
@@ -218,7 +218,7 @@ class GameState(BaseModel):
         lines.append(f"Momentum Trend: {self.momentum.overall_trend}")
 
         # Crowd atmosphere only meaningful in tight late-game situations
-        if flags["is_last_period"] and flags["score_diff"] < 10:
+        if flags["is_last_period"] and flags["score_diff"] < LATE_GAME_MAX_SCORE_DIFF:
             lines.append(f"Venue: {self.venue_type} | Crowd Intensity: {self.momentum.crowd_intensity}")
 
         return lines
@@ -231,7 +231,6 @@ class GameState(BaseModel):
         - UNAVAILABLE (injured or fouled out—so AI knows why they're missing)
         """
         lines = []
-
         lines.append("\n[ON COURT PERSONNEL]")
         for p in my_team.active_lineup:
             lines.append(f"- {self._fmt_player(p, flags)}")
@@ -286,7 +285,7 @@ class GameState(BaseModel):
         opp_foul_trouble = [
             f"{p.name} (#{p.number}) ({p.current_fouls} fouls)"
             for p in opp_team.active_lineup
-            if p.current_fouls >= (self.rules.max_fouls_per_player - 2)
+            if p.current_fouls >= (self.rules.max_fouls_per_player - OPPONENT_FOUL_TROUBLE_BUFFER)
         ]
         if opp_foul_trouble:
             alarms.append(
@@ -309,7 +308,7 @@ class GameState(BaseModel):
         # Star Player warning
         for p in my_team.active_lineup:
             if p.position_rank == 1:
-                if p.current_fouls >= (self.rules.max_fouls_per_player - 1):
+                if p.current_fouls >= (self.rules.max_fouls_per_player - STAR_PLAYER_FOUL_TROUBLE_BUFFER):
                     alarms.append(
                         f"[Risk Warning] STAR IN FOUL TROUBLE:"
                         f" {p.name} (#{p.number}) has {p.current_fouls} fouls!"
@@ -329,7 +328,7 @@ class GameState(BaseModel):
             alarms.append(f"[Requires Substitution] FATIGUE: {', '.join(exhausted)} are tired.")
 
         # foul trouble
-        foul_threshold_diff = 3 if flags["is_first_half"] else 1
+        foul_threshold_diff = FOUL_TROUBLE_BUFFER_FIRST_HALF if flags["is_first_half"] else FOUL_TROUBLE_BUFFER_SECOND_HALF
         foul_threshold = self.rules.max_fouls_per_player - foul_threshold_diff
         foul_trouble = [
             f"{p.name} (#{p.number}) ({p.current_fouls})"
@@ -362,7 +361,7 @@ class GameState(BaseModel):
             young_bench = [
                 f"{p.name} (#{p.number})"
                 for p in available_bench_sorted
-                if p.age < 25
+                if p.age < YOUTH_AGE_THRESHOLD
             ]
             if young_bench:
                 alarms.append(

@@ -32,6 +32,7 @@ class LeagueRules(BaseModel):
             self.period_length_minutes = 12
             self.max_fouls_per_player = 6
             self.team_fouls_to_penalty = 4
+            self.overtime_length_minutes=5
             self.shot_clock_seconds = 24
             self.offensive_rebound_reset_seconds = 14
             self.max_timeouts = 7
@@ -41,6 +42,7 @@ class LeagueRules(BaseModel):
             self.max_fouls_per_player = 5
             self.team_fouls_to_penalty = 4
             self.shot_clock_seconds = 24
+            self.overtime_length_minutes = 5
             self.offensive_rebound_reset_seconds = 14
             self.max_timeouts=5
 
@@ -50,6 +52,7 @@ class LeagueRules(BaseModel):
             self.max_fouls_per_player = 5
             self.team_fouls_to_penalty = 6
             self.shot_clock_seconds = 30
+            self.overtime_length_minutes = 5
             self.offensive_rebound_reset_seconds = 20
             self.max_timeouts = 4
 
