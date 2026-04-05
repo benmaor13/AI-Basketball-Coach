@@ -33,7 +33,7 @@ class Player(BaseModel):
         default=1,
         ge=1,
         le=5,
-        description="Rank in this position from all team players (1 is best)",
+        description="Rank in this position from all team players (1 is the best)",
         json_schema_extra={"example": 1}
     )
     style: Literal[
@@ -46,13 +46,14 @@ class Player(BaseModel):
         "Versatile"
     ] = Field(
         ...,
-        description="The player's tactical archetype. Tells the AI the player's 'DNA' and primary role on the court.",
+        description="The player's tactical archetype.Tells the AI the player's 'DNA' and primary role on the court.",
         json_schema_extra={"example": "Sharpshooter"}
     )
-    # seasonal ft percentage (is not updated during the game for now)
+    # seasonal ft percentage (is not updated during the game)
     season_ft_pct: int = Field(
         ..., ge=0, le=100,
-        description="Season average free throw percentage. Used to adapy the players on the court to coach's directive"
+        description="Season average free throw percentage. Used to adapy the players on the court to coach's directive",
+        json_schema_extra={"example": 70}
     )
     # real time data
     is_on_court: bool = Field(default=False)
@@ -64,21 +65,30 @@ class Player(BaseModel):
     )
     current_stint_minutes: float = Field(
         default=0.0,
-        description="Minutes played continuously since last subbed in. Used to prevent rapid 'yo-yo' subs."
+        description="Minutes played continuously since last subbed in. Used to prevent rapid subs.",
+        json_schema_extra={"example": 10}
     )
     fatigue_level: Literal["Fresh", "Normal", "Tired", "Exhausted", "Injured"] = Field(
         default="Fresh",
         description="describe the fatigue level(Fresh, Normal , Tired ,Exhausted ,Injured)",
-        json_schema_extra={"example": 12}
+        json_schema_extra={"example": "Fresh"}
     )
     current_fouls: int = Field(
         default=0,
         ge=0,
         le=6,
+        description="Current fouls in the game. Upper limit depends on league rules and is validated by GameState.",
         json_schema_extra={"example": 2}
     )
     # fields used to calculate the efficiency of the player(live stats and not season average)
-    field_goals_made: int = Field(default=0, ge=0)
+    field_goals_made: int = Field(
+        default=0,
+        ge=0,
+        le=20,
+        description="number of field goals made(includes 2 points and 3 points)",
+        json_schema_extra={"example": 3}
+    )
+    # Updates statistics of the game so far
     field_goals_attempted: int = Field(default=0, ge=0)
     three_pointers_made: int = Field(default=0, ge=0)
     three_pointers_attempted: int = Field(default=0, ge=0)
@@ -89,7 +99,6 @@ class Player(BaseModel):
     steals: int = Field(default=0, ge=0)
     blocks: int = Field(default=0, ge=0)
     turnovers: int = Field(default=0, ge=0)
-
     # computed properties
     @computed_field
     @property

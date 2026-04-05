@@ -8,18 +8,21 @@ class GameMomentum(BaseModel):
     """
     overall_trend: Literal["Strong Home", "Slight Home", "Neutral", "Slight Away", "Strong Away"] = Field(
         default="Neutral",
-        description="Who currently controls the energy and pace of the game(from the options Strong/Slight Home and Slight/Strong Away"
+        description="Who currently controls the energy and pace of the game(from the options Strong/Slight Home and Slight/Strong Away",
+        json_schema_extra={"example": "Strong Home"}
     )
     # used to validate the overall_trend
     home_team_run: int = Field(
         default=0,
         ge=0,
+        le =50,
         description="current streak of points by the home team when the away team did not score",
         json_schema_extra={"example": 8}
     )
     # used to validate the overall_trend
     away_team_run: int = Field(
         default=0,
+        le=50,
         ge=0,
         description="current streak of points by the away team when the home team did not score",
         json_schema_extra={"example": 0}
@@ -28,6 +31,7 @@ class GameMomentum(BaseModel):
     crowd_intensity: Literal["Quiet", "Engaged", "Hostile", "Electric"] = Field(
         default="Engaged",
         description="The atmosphere in the arena(Quiet, Engaged, Hostile,or Electric)",
+        json_schema_extra={"example": "Electric"}
     )
 
     @model_validator(mode='after')
@@ -43,18 +47,18 @@ class GameMomentum(BaseModel):
                 "Only one team can have a scoring run."
             )
 
-        if self.home_team_run >= 6 and self.overall_trend in ["Slight Away", "Strong Away"]:
+        if self.home_team_run >= 6 and self.overall_trend in ["Slight Away", "Strong Away", "Neutral"]:
             raise ValueError(
                 f"Contradiction: Home team is on a {self.home_team_run}-0 run, "
                 f"but momentum trend is set to '{self.overall_trend}'. "
-                "Trend must be neutral or favor the home team during a significant home run."
+                "Trend must  favor the home team during a significant home run."
             )
 
-        if self.away_team_run >= 6 and self.overall_trend in ["Slight Home", "Strong Home"]:
+        if self.away_team_run >= 6 and self.overall_trend in ["Slight Home", "Strong Home", "Neutral"]:
             raise ValueError(
                 f"Contradiction: Away team is on a {self.away_team_run}-0 run, "
                 f"but momentum trend is set to '{self.overall_trend}'. "
-                "Trend must be neutral or favor the away team during a significant away run."
+                "Trend must  favor the away team during a significant away run."
             )
 
         return self

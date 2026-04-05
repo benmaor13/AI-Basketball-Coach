@@ -18,44 +18,52 @@ class GameState(BaseModel):
     rules: LeagueRules
     momentum: GameMomentum
     directives: CoachDirectives
+
     # where the game is played
     venue_type: Literal["Home", "Away", "Neutral"] = Field(
         ...,
         description="Indicates the game location. 'Home' means playing at the home_team's arena."
     )
-    # which team is the one of the coach
+    # which team the AI is coaching
     target_team: Literal["Home", "Away"] = Field(
         default="Home",
         description="The team the AI is currently coaching."
     )
-    # simple stats about the current situation in the game
+    # score
     home_score: int = Field(..., ge=0, description="Total points scored by the home team.")
     away_score: int = Field(..., ge=0, description="Total points scored by the away team.")
+    # clock
     current_period: int = Field(..., ge=1, description="Current game period. e.g., 1-4 for quarters.")
     minutes_remaining: int = Field(..., ge=0, le=20, description="Minutes left on the clock.")
     seconds_remaining: int = Field(..., ge=0, le=59, description="Seconds left on the clock.")
+    # possession
     possession: Literal["Home", "Away", "Neutral"] = Field(default="Neutral")
+
+    # live bilateral stats — single source of truth (not duplicated on Team)
     home_timeouts_remaining: int = Field(default=3, ge=0)
     away_timeouts_remaining: int = Field(default=3, ge=0)
     home_team_fouls: int = Field(default=0, ge=0)
     away_team_fouls: int = Field(default=0, ge=0)
-
-    # validating some parameters according to league rules
+    # validation
     @model_validator(mode='after')
     def validate_game_logic(self) -> 'GameState':
+        # timeouts cannot exceed league maximum
         if self.home_timeouts_remaining > self.rules.max_timeouts or \
                 self.away_timeouts_remaining > self.rules.max_timeouts:
             raise ValueError(f"A team cannot have more than {self.rules.max_timeouts} timeouts.")
 
+        # minutes remaining cannot exceed the period length
         is_overtime = self.current_period > self.rules.number_of_periods
-        max_minutes_for_period = self.rules.overtime_length_minutes if is_overtime else self.rules.period_length_minutes
-
+        max_minutes_for_period = (
+            self.rules.overtime_length_minutes if is_overtime
+            else self.rules.period_length_minutes
+        )
         if self.minutes_remaining > max_minutes_for_period:
             raise ValueError(
                 f"Invalid time: Minutes remaining ({self.minutes_remaining}) cannot exceed "
                 f"the maximum length for period {self.current_period} ({max_minutes_for_period} mins)."
             )
-
+        # player foul validation against league rules
         max_fouls = self.rules.max_fouls_per_player
         for team in [self.home_team, self.away_team]:
             for player in team.players:
@@ -71,186 +79,319 @@ class GameState(BaseModel):
                     )
 
         return self
+    # Fields that are used in the summary
+    def _get_my_timeouts(self) -> int:
+        """Returns the coaching team's remaining timeouts"""
+        return self.home_timeouts_remaining if self.target_team == "Home" else self.away_timeouts_remaining
 
-    def to_ai_summary(self) -> str:
-        """
-        Generates the message to the AI that will be short as possible,
-        accurate with the most relevant info and is written (as much as possible)
-        in a specific pattern. the design makes the AI more accurate and also
-        makes hallucinating less common
-        """
+    def _get_my_fouls(self) -> int:
+        """Returns the coaching team's current period fouls"""
+        return self.home_team_fouls if self.target_team == "Home" else self.away_team_fouls
 
-        # parameters which indicate abbout the current situation in the game, and used for further calculations.
+    def _get_opp_fouls(self) -> int:
+        """Returns the opponent team's current period fouls"""
+        return self.away_team_fouls if self.target_team == "Home" else self.home_team_fouls
+
+    def _compute_game_flags(self) -> dict:
+        """
+        Computes all boolean game-state flags used across multiple sections.
+        """
         score_diff = abs(self.home_score - self.away_score)
         is_last_period = self.current_period >= self.rules.number_of_periods
         is_first_half = self.current_period <= (self.rules.number_of_periods / 2)
-        is_clutch_time = (is_last_period and self.minutes_remaining < 2 and score_diff < 6)
-        is_late_close_game = (is_last_period and self.minutes_remaining < 4 and score_diff < 10)
-        end_of_period = (self.minutes_remaining == 0 and self.seconds_remaining <= 30)
+        is_clutch_time = is_last_period and self.minutes_remaining < 2 and score_diff < 6
+        is_late_close_game = is_last_period and self.minutes_remaining < 4 and score_diff < 10
+        end_of_period = self.minutes_remaining == 0 and self.seconds_remaining <= 30
 
-        # coach directives, that impact the AI decisions
-        off_strat = self.directives.offensive_strategy
-        def_focus = self.directives.defensive_focus
-        objective = self.directives.game_objective
+        return {
+            "score_diff": score_diff,
+            "is_last_period": is_last_period,
+            "is_first_half": is_first_half,
+            "is_clutch_time": is_clutch_time,
+            "is_late_close_game": is_late_close_game,
+            "end_of_period": end_of_period,
+        }
 
-        # gathering the relevant information about the players
-        def fmt_p(p) -> str:
-            rank_label = f"Rank :{p.position_rank}"
-            stats = [f"EFF: {p.efficiency_score}", f"Style: {p.style}"]
+    def _fmt_streak(self, s: int) -> str:
+        """Formats win/loss streak in standard sports notation"""
+        return f"{s}W" if s > 0 else f"{abs(s)}L" if s < 0 else "0"
 
-            # the ft percentage is relevant(in addition to the calculation of efficiency) to specific directives
-            if "Kill the Clock" in objective or "Paint" in off_strat or is_clutch_time:
-                stats.append(f"FT: {p.season_ft_pct}%")
+    def _fmt_player(self, p, flags: dict) -> str:
+        """
+        Formats a single player's info for the AI prompt.
+        """
+        # Rank in the position and data about efficiency and playStyle
+        rank_label = f"Rank:{p.position_rank}"
+        stats = [f"EFF:{p.efficiency_score}", f"Style:{p.style}"]
 
-            # Cooldown logic to prevent rapid 'yo-yo' substitutions
-            if p.is_on_court and getattr(p, 'current_stint_minutes',
-                                         0.0) < 2.0 and p.fatigue_level != "Injured" and p.current_fouls < (
-                    self.rules.max_fouls_per_player - 1):
-                stats.append("JUST SUBBED IN (Do Not Sub Out)")
+        # FT% is only relevant in specific strategic contexts, keeps prompt shorter otherwise
+        show_ft = (
+            self.directives.game_objective == "Kill the Clock"
+            or self.directives.offensive_strategy == "Attack the Paint"
+            or flags["is_clutch_time"]
+        )
+        # if it is relevant we add this stat
+        if show_ft:
+            stats.append(f"FT:{p.season_ft_pct}%")
+        # Cooldown flag — prevents rapid yo-yo substitutions
+        just_subbed_in = (
+            p.is_on_court
+            and p.current_stint_minutes < 2.0
+            and p.fatigue_level != "Injured"
+            and p.current_fouls < (self.rules.max_fouls_per_player - 1)
+        )
+        if just_subbed_in:
+            stats.append("JUST SUBBED IN (Do Not Sub Out)")
+        stats_str = ", ".join(stats)
+        # Age only shown when relevant to the decision (late tight game or youth development)
+        show_age = flags["is_late_close_game"] or self.directives.game_objective == "Develop Youth"
+        age_info = f", Age:{p.age}" if show_age else ""
+        return (
+            f"{p.name} (#{p.number}, {p.position}, {rank_label}{age_info})"
+            f" [{stats_str}, Fouls:{p.current_fouls}, Fatigue:{p.fatigue_level}]"
+        )
 
-            stats_str = ", ".join(stats)
-            # age is relevant when it is the end of a tight game or when coach wants to develop young players
-            age_info = f", Age: {p.age}" if is_late_close_game or "Develop Youth" in objective else ""
-
-            return f"{p.name} (#{p.number}, {p.position}, {rank_label}{age_info}) [{stats_str}, Fouls: {p.current_fouls}, Fatigue: {p.fatigue_level}]"
-
-        # gathers the information used to make the summary
-        summary = []
-        # the coach's team and the other team
-        my_team = self.home_team if self.target_team == "Home" else self.away_team
-        opp_team = self.away_team if self.target_team == "Home" else self.home_team
+    def _build_game_context(self, my_team, opp_team, flags: dict) -> list[str]:
+        """Builds the [GAME CONTEXT] section — score, time, matchup, fouls, timeouts."""
+        lines = []
+        score_diff = flags["score_diff"]
 
         if self.home_score == self.away_score:
             lead_status = "Game is TIED"
         else:
             leader = self.home_team.name if self.home_score > self.away_score else self.away_team.name
             lead_status = f"{leader} leads by {score_diff}"
-        # creating the main context to the AI
-        summary.append("[GAME CONTEXT]")
 
-        # Explicit Semantic Trigger for the AI regarding Game Phase
-        game_phase = "CLUTCH TIME" if is_clutch_time else "Late Close Game" if is_late_close_game else "Regular Flow"
-        summary.append(f"Game Phase: {game_phase}")
+        game_phase = (
+            "CLUTCH TIME" if flags["is_clutch_time"]
+            else "Late Close Game" if flags["is_late_close_game"]
+            else "Regular Flow"
+        )
 
-        # score
-        summary.append(
-            f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name} ({lead_status})")
-        # time
-        summary.append(
-            f"Time: Period {self.current_period}, {self.minutes_remaining}:{self.seconds_remaining:02d} left")
+        lines.append("[GAME CONTEXT]")
+        # Explicit semantic trigger for the AI — game phase affects its entire reasoning
+        lines.append(f"Game Phase: {game_phase}")
+        lines.append(
+            f"Score: {self.home_team.name} {self.home_score} - {self.away_score} {self.away_team.name} ({lead_status})"
+        )
+        lines.append(
+            f"Time: Period {self.current_period}, {self.minutes_remaining}:{self.seconds_remaining:02d} left"
+        )
+        lines.append(
+            f"Matchup: {self.home_team.name} (Rank #{self.home_team.league_position})"
+            f" vs. {self.away_team.name} (Rank #{self.away_team.league_position})"
+        )
+        lines.append(
+            f"Our Stats ({my_team.name}): Off Rank #{my_team.offensive_rank},"
+            f" Def Rank #{my_team.defensive_rank}, Streak: {self._fmt_streak(my_team.win_streak)}"
+        )
+        lines.append(
+            f"Opp Stats ({opp_team.name}): Off Rank #{opp_team.offensive_rank},"
+            f" Def Rank #{opp_team.defensive_rank}, Streak: {self._fmt_streak(opp_team.win_streak)}"
+        )
+        # Timeouts
+        lines.append(f"Timeouts Left: {self._get_my_timeouts()} / {self.rules.max_timeouts}")
 
-        # wins\losses streak in a known sports format (to better understanding of the AI)
-        def fmt_streak(s):
-            return f"{s}W" if s > 0 else f"{abs(s)}L" if s < 0 else "0"
+        # Fouls
+        lines.append(
+            f"Team Fouls (Penalty at {self.rules.team_fouls_to_penalty}):"
+            f" Us: {self._get_my_fouls()}, Opponent: {self._get_opp_fouls()}"
+        )
 
-        # these lines improve the context of the game in general
-        summary.append(
-            f"Matchup: {self.home_team.name} (Rank #{self.home_team.league_position}) vs. {self.away_team.name} (Rank #{self.away_team.league_position})")
-        summary.append(
-            f"Our Stats ({my_team.name}): Off Rank #{my_team.offensive_rank}, Def Rank #{my_team.defensive_rank}, Streak: {fmt_streak(my_team.win_streak)}")
-        summary.append(
-            f"Opp Stats ({opp_team.name}): Off Rank #{opp_team.offensive_rank}, Def Rank #{opp_team.defensive_rank}, Streak: {fmt_streak(opp_team.win_streak)}")
+        # Possession is only tactically relevant at end of period or clutch time
+        if flags["end_of_period"] or flags["is_clutch_time"]:
+            lines.append(f"Possession: {self.possession}")
 
-        summary.append(f"Timeouts Left: {my_team.timeouts_remaining} / {self.rules.max_timeouts}")
-        summary.append(
-            f"Team Fouls (Penalty at {self.rules.team_fouls_to_penalty}): Us: {my_team.team_fouls}, Opponent: {opp_team.team_fouls}")
-        # the possession is relevant only in specific circumstances
-        if end_of_period or is_clutch_time:
-            summary.append(f"Possession: {self.possession}")
-        # adding info about the coach directives
-        summary.append("\n[STRATEGIC CONTEXT]")
-        summary.append(f"Objective: {objective} |MY Risk Tolerance: {self.directives.risk_tolerance}")
-        summary.append(f"Scheme: Offense='{off_strat}', Defense='{def_focus}'")
-        summary.append(f"Momentum Trend: {self.momentum.overall_trend}")
-        # atmosphere is especially relevant in the end of a tight game
-        if is_last_period and score_diff < 10:
-            summary.append(f"Venue: {self.venue_type} | Crowd Intensity: {self.momentum.crowd_intensity}")
-        summary.append("\n[ON COURT PERSONNEL]")
+        return lines
+
+    def _build_strategic_context(self, my_team, opp_team, flags: dict) -> list[str]:
+        """Builds the [STRATEGIC CONTEXT] section"""
+        lines = []
+        lines.append("\n[STRATEGIC CONTEXT]")
+        lines.append(
+            f"Objective: {self.directives.game_objective} | Risk Tolerance: {self.directives.risk_tolerance}"
+        )
+        lines.append(
+            f"Scheme: Offense='{self.directives.offensive_strategy}',"
+            f" Defense='{self.directives.defensive_focus}'"
+        )
+        lines.append(f"Momentum Trend: {self.momentum.overall_trend}")
+
+        # Crowd atmosphere only meaningful in tight late-game situations
+        if flags["is_last_period"] and flags["score_diff"] < 10:
+            lines.append(f"Venue: {self.venue_type} | Crowd Intensity: {self.momentum.crowd_intensity}")
+
+        return lines
+
+    def _build_personnel(self, my_team, flags: dict) -> list[str]:
+        """
+        Builds the personnel sections:
+        - ON COURT (active lineup)
+        - AVAILABLE BENCH (sorted to prevent LLM position bias)
+        - UNAVAILABLE (injured or fouled out—so AI knows why they're missing)
+        """
+        lines = []
+
+        lines.append("\n[ON COURT PERSONNEL]")
         for p in my_team.active_lineup:
-            summary.append(f"- {fmt_p(p)}")
-        # we do not add player who are injured or exceeded the foul limit
-        available_bench = [p for p in my_team.players if
-                           not p.is_on_court and p.fatigue_level != "Injured" and p.current_fouls < self.rules.max_fouls_per_player]
+            lines.append(f"- {self._fmt_player(p, flags)}")
 
-        # Sorting bench to prevent LLM Position Bias
+        # Exclude injured and fouled-out players from bench options
+        available_bench = [
+            p for p in my_team.players
+            if not p.is_on_court
+            and p.fatigue_level != "Injured"
+            and p.current_fouls < self.rules.max_fouls_per_player
+        ]
+        # Sort by position rank then efficiency to prevent LLM recency bias (minus to make the opposite order)
         available_bench_sorted = sorted(available_bench, key=lambda p: (p.position_rank, -p.efficiency_score))
+
         if available_bench_sorted:
-            summary.append("\n[AVAILABLE BENCH PERSONNEL]")
+            lines.append("\n[AVAILABLE BENCH PERSONNEL]")
             for p in available_bench_sorted:
-                summary.append(f"- {fmt_p(p)}")
+                lines.append(f"- {self._fmt_player(p, flags)}")
 
-        # making sure the AI knows why certain players are missing from the bench options
-        unavailable_players = [p for p in my_team.players if
-                               not p.is_on_court and (
-                                       p.fatigue_level == "Injured" or p.current_fouls >= self.rules.max_fouls_per_player)]
-        if unavailable_players:
-            summary.append("\n[UNAVAILABLE PERSONNEL (DO NOT SUB IN)]")
-            for p in unavailable_players:
+        # Explicitly list unavailable players so the AI doesn't hallucinate subbing them in
+        unavailable = [
+            p for p in my_team.players
+            if not p.is_on_court
+            and (p.fatigue_level == "Injured" or p.current_fouls >= self.rules.max_fouls_per_player)
+        ]
+        if unavailable:
+            lines.append("\n[UNAVAILABLE PERSONNEL (DO NOT SUB IN)]")
+            for p in unavailable:
                 reason = "Injured" if p.fatigue_level == "Injured" else "Fouled Out"
-                summary.append(f"- {p.name} (#{p.number}) [Status: {reason}]")
+                lines.append(f"- {p.name} (#{p.number}) [Status: {reason}]")
 
-        # the "most dangerous" player of the other team based on efficiency and position rank
+        return lines
+
+    def _build_opponent_threat(self, opp_team, flags: dict) -> list[str]:
+        """Identifies and formats the most dangerous opponent on the court."""
+        lines = []
         if opp_team.active_lineup:
             top_threat = max(opp_team.active_lineup, key=lambda p: (p.efficiency_score, -p.position_rank))
-            summary.append(f"\n[OPPONENT THREAT ON COURT]")
-            summary.append(f"- {fmt_p(top_threat)}")
-        # important messages to the AI based on the current situation
+            lines.append("\n[OPPONENT THREAT ON COURT]")
+            lines.append(f"- {self._fmt_player(top_threat, flags)}")
+        return lines
+
+    def _build_alarms(self, my_team, opp_team, available_bench_sorted, flags: dict) -> list[str]:
+        """
+        Builds the [ACTIONABLE ALERTS] section.
+        Alarms are prioritized, labeled instructions that directly
+        map to action_types in the AI's structured output.
+        """
         alarms = []
-        # players in the other team that have foul trouble
-        opp_foul_trouble = [f"{p.name} (#{p.number}) ({p.current_fouls} fouls)" for p in opp_team.active_lineup
-                            if p.current_fouls >= (self.rules.max_fouls_per_player - 2)]
+
+        # Opponent's vulnerability
+        opp_foul_trouble = [
+            f"{p.name} (#{p.number}) ({p.current_fouls} fouls)"
+            for p in opp_team.active_lineup
+            if p.current_fouls >= (self.rules.max_fouls_per_player - 2)
+        ]
         if opp_foul_trouble:
             alarms.append(
-                f"[Consider Foul Strategy] OPPONENT VULNERABILITY: Attack {', '.join(opp_foul_trouble)} to force disqualification!")
+                f"[Consider Foul Strategy] OPPONENT VULNERABILITY:"
+                f" Attack {', '.join(opp_foul_trouble)} to force disqualification!"
+            )
 
-        # injured players still on the court must be subbed out immediately
-        injured_on_court = [f"{p.name} (#{p.number})" for p in my_team.active_lineup if p.fatigue_level == "Injured"]
+        # mandatory substitutions
+        injured_on_court = [
+            f"{p.name} (#{p.number})"
+            for p in my_team.active_lineup
+            if p.fatigue_level == "Injured"
+        ]
         if injured_on_court:
             alarms.append(
-                f"[Requires Substitution] MANDATORY SUB: {', '.join(injured_on_court)} are INJURED and must be subbed out immediately!")
-        # noticeable alert when the best player on the court is tired
+                f"[Requires Substitution] MANDATORY SUB:"
+                f" {', '.join(injured_on_court)} are INJURED and must be subbed out immediately!"
+            )
+
+        # Star Player warning
         for p in my_team.active_lineup:
             if p.position_rank == 1:
                 if p.current_fouls >= (self.rules.max_fouls_per_player - 1):
                     alarms.append(
-                        f"[Risk Warning] STAR IN FOUL TROUBLE: {p.name} (#{p.number}) has {p.current_fouls} fouls!")
-                if p.fatigue_level in ["Tired", "Exhausted"]:
-                    alarms.append(f"[Risk Warning] STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}.")
-        # list of the tired players on the court
-        exhausted = [f"{p.name} (#{p.number})" for p in my_team.active_lineup if
-                     p.fatigue_level in ["Tired", "Exhausted"] and p.position_rank > 1]
+                        f"[Risk Warning] STAR IN FOUL TROUBLE:"
+                        f" {p.name} (#{p.number}) has {p.current_fouls} fouls!"
+                    )
+                if p.fatigue_level in ("Tired", "Exhausted"):
+                    alarms.append(
+                        f"[Risk Warning] STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}."
+                    )
+
+        # Nonstar fatigue warning
+        exhausted = [
+            f"{p.name} (#{p.number})"
+            for p in my_team.active_lineup
+            if p.fatigue_level in ("Tired", "Exhausted") and p.position_rank > 1
+        ]
         if exhausted:
             alarms.append(f"[Requires Substitution] FATIGUE: {', '.join(exhausted)} are tired.")
-        # players who have "foul trouble", while taking into account current part of the game
-        foul_threshold_diff = 3 if is_first_half else 1
+
+        # foul trouble
+        foul_threshold_diff = 3 if flags["is_first_half"] else 1
         foul_threshold = self.rules.max_fouls_per_player - foul_threshold_diff
-        foul_trouble = [f"{p.name} (#{p.number}) ({p.current_fouls})" for p in my_team.active_lineup
-                        if p.current_fouls >= foul_threshold and p.position_rank > 1]
+        foul_trouble = [
+            f"{p.name} (#{p.number}) ({p.current_fouls})"
+            for p in my_team.active_lineup
+            if p.current_fouls >= foul_threshold and p.position_rank > 1
+        ]
         if foul_trouble:
             alarms.append(f"[Requires Substitution] FOUL TROUBLE: {', '.join(foul_trouble)}")
-        # alert when the other team exceeded the foul limit
-        if opp_team.team_fouls >= self.rules.team_fouls_to_penalty:
+
+        # penalty situation
+        if self._get_opp_fouls() >= self.rules.team_fouls_to_penalty:
             alarms.append(
-                "[Offensive Focus Shift] TACTICAL ADVANTAGE: Opponent in PENALTY. Attack the paint to draw fouls!")
-        # alert when out team exceeded the foul limit
-        if my_team.team_fouls >= self.rules.team_fouls_to_penalty:
-            alarms.append("[Defensive Scheme Adjustment] DANGER: We are in the PENALTY. Play clean defense!")
-        # using the last timeout smartly and also avoiding a technical foul by calling timeout when 0 remaining
-        if my_team.timeouts_remaining == 1:
-            alarms.append("[Timeout Warning] CRITICAL: 1 timeouts left! Use carefully.")
-        if my_team.timeouts_remaining == 0:
-            alarms.append("[Timeout Warning] CRITICAL: 0 timeouts left! Do Not Call timeout anymore!.")
+                "[Offensive Focus Shift] TACTICAL ADVANTAGE:"
+                " Opponent in PENALTY. Attack the paint to draw fouls!"
+            )
+        if self._get_my_fouls() >= self.rules.team_fouls_to_penalty:
+            alarms.append(
+                "[Defensive Scheme Adjustment] DANGER: We are in the PENALTY. Play clean defense!"
+            )
+
+        # timeout warnings
+        my_timeouts = self._get_my_timeouts()
+        if my_timeouts == 1:
+            alarms.append("[Timeout Warning] CRITICAL: 1 timeout left! Use carefully.")
+        if my_timeouts == 0:
+            alarms.append("[Timeout Warning] CRITICAL: 0 timeouts left! Do NOT call timeout.")
+
+       # Optional Youth develompent
+        if self.directives.game_objective == "Develop Youth":
+            young_bench = [
+                f"{p.name} (#{p.number})"
+                for p in available_bench_sorted
+                if p.age < 25
+            ]
+            if young_bench:
+                alarms.append(
+                    f"[Requires Substitution] DEVELOPMENT PRIORITY:"
+                    f" Sub in U25 players: {', '.join(young_bench)}"
+                )
+
+        return alarms
+
+    def to_ai_summary(self) -> str:
+        """
+        Generates the prompt body sent to the AI.
+        Designed to be as short as possible while remaining accurate —
+        structured sections and explicit semantic labels reduce hallucination.
+        """
+        flags = self._compute_game_flags()
+        my_team = self.home_team if self.target_team == "Home" else self.away_team
+        opp_team = self.away_team if self.target_team == "Home" else self.home_team
+        summary = []
+        summary += self._build_game_context(my_team, opp_team, flags)
+        summary += self._build_strategic_context(my_team, opp_team, flags)
+        personnel_lines, available_bench_sorted = self._build_personnel(my_team, flags)
+        summary += personnel_lines
+        summary += self._build_opponent_threat(opp_team, flags)
+        alarms = self._build_alarms(my_team, opp_team, available_bench_sorted, flags)
         if alarms:
             summary.append("\n[ACTIONABLE ALERTS]")
             for alarm in alarms:
                 summary.append(f"- {alarm}")
-        # the young age matters when the coach wants to develop young players
-        if "Develop Youth" in objective:
-            young_bench = [f"{p.name} (#{p.number})" for p in available_bench_sorted if p.age < 25]
-            if young_bench:
-                summary.append("\n[DEVELOPMENT OPPORTUNITY]")
-                summary.append(
-                    f"[Requires Substitution] Mandatory priority: Sub in these U25 players: {', '.join(young_bench)}")
 
         return "\n".join(summary)
 

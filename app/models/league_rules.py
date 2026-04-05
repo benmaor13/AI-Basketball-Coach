@@ -9,11 +9,11 @@ class LeagueRules(BaseModel):
 
     league_format: Literal["FIBA", "NBA", "NCAA", "Custom"] = Field(
         default="FIBA",
-        description="Select league. For NBA/FIBA/NCAA, all fields will be override, select costume if you want to choose something different",
+        description="Select league. For NBA/FIBA/NCAA, all fields will be override, select custom if you want to choose something different",
         json_schema_extra={"example": "NBA"}
     )
 
-    number_of_periods: int = Field(default=4, ge=1, le=4)
+    number_of_periods: int = Field(default=4, ge=1, le=6)
     period_length_minutes: int = Field(default=10, ge=5, le=20)
     overtime_length_minutes: int = Field(default=5, ge=2, le=5)
     max_fouls_per_player: int = Field(default=5, ge=4, le=6)

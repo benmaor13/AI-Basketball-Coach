@@ -32,7 +32,7 @@ class Team(BaseModel):
 
     win_streak: int = Field(
         default=0,
-        description="Current win streak. Positive integers for wins streak (e.g., 5), negative for losses streak(e.g., -3).",
+        description="Current win streak. Positive integers for wins streak,negative for losses streak",
         json_schema_extra={"example": 3}
     )
 
@@ -48,21 +48,6 @@ class Team(BaseModel):
         ge=1,
         description="Team's defensive efficiency rank in the league. 1 is the best defensive team.",
         json_schema_extra={"example": 7}
-    )
-
-    # game real time state
-    timeouts_remaining: int = Field(
-        default=3,
-        ge=0,
-        description="Number of remaining timeouts available for the coach.",
-        json_schema_extra={"example": 2}
-    )
-
-    team_fouls: int = Field(
-        default=0,
-        ge=0,
-        description="Total team fouls committed in the current period.",
-        json_schema_extra={"example": 2}
     )
 
     upcoming_schedule_density: Literal["Low", "Medium", "High"] = Field(

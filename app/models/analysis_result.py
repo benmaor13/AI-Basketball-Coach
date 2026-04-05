@@ -86,7 +86,6 @@ class AnalysisReport(BaseModel):
         description="AI's certainty (0.0 to 1.0) based on how clearly the stats support the recommended actions.",
         json_schema_extra={"example": 0.88}
     )
-
     model_config = ConfigDict(
         json_schema_extra={"example": ANALYSIS_REPORT_EXAMPLE}
     )

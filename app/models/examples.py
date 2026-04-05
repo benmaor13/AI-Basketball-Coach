@@ -1,5 +1,6 @@
 GAME_STATE_EXAMPLE = {
     "venue_type": "Home",
+    "target_team": "Home",
     "home_score": 88,
     "away_score": 82,
     "current_period": 4,
@@ -10,51 +11,47 @@ GAME_STATE_EXAMPLE = {
     "away_timeouts_remaining": 1,
     "home_team_fouls": 3,
     "away_team_fouls": 5,
+
     "rules": {
-        "league_format": "FIBA",
-        "number_of_periods": 4,
-        "period_length_minutes": 10,
-        "overtime_length_minutes": 5,
-        "max_fouls_per_player": 5,
-        "team_fouls_to_penalty": 4,
-        "shot_clock_seconds": 24,
-        "offensive_rebound_reset_seconds": 14,
-        "max_timeouts": 5
+        "league_format": "FIBA"
     },
+
     "momentum": {
         "overall_trend": "Strong Home",
         "home_team_run": 8,
         "away_team_run": 0,
         "crowd_intensity": "Electric"
     },
+
     "directives": {
-        "offensive_strategy": "Pace and Space",
-        "defensive_focus": "Force Turnovers",
-        "risk_tolerance": "High",
-        "game_objective": "Win at all costs"
-    },
+    "offensive_strategy": "Motion Offense",
+    "defensive_focus": "Protect the Paint",
+    "risk_tolerance": "High",
+    "game_objective": "Win Now"
+},
+
     "home_team": {
         "name": "BGU Lakers",
         "league_position": 1,
         "win_streak": 3,
         "offensive_rank": 2,
         "defensive_rank": 4,
-        "timeouts_remaining": 2,
-        "team_fouls": 3,
         "upcoming_schedule_density": "High",
         "players": [
+            # ── STARTERS (is_on_court: True) ──────────────────────────────────
             {
-                "name": "Noam",
+                "name": "Noam Peretz",
                 "number": 7,
                 "age": 24,
                 "position": "PG",
-                "is_on_court": True,
+                "position_rank": 1,
                 "style": "Floor General",
                 "season_ft_pct": 88,
-                "current_stint_minutes": 6.5,
-                "current_fouls": 2,
+                "is_on_court": True,
                 "minutes_played": 32,
+                "current_stint_minutes": 6.5,
                 "fatigue_level": "Normal",
+                "current_fouls": 2,
                 "field_goals_made": 5,
                 "field_goals_attempted": 10,
                 "three_pointers_made": 2,
@@ -65,33 +62,209 @@ GAME_STATE_EXAMPLE = {
                 "assists": 8,
                 "steals": 2,
                 "blocks": 0,
-                "turnovers": 3,
-                "position_rank": 1
+                "turnovers": 3
+            },
+            {
+                "name": "Lior Cohen",
+                "number": 3,
+                "age": 22,
+                "position": "SG",
+                "position_rank": 1,
+                "style": "Sharpshooter",
+                "season_ft_pct": 85,
+                "is_on_court": True,
+                "minutes_played": 28,
+                "current_stint_minutes": 4.0,
+                "fatigue_level": "Normal",
+                "current_fouls": 1,
+                "field_goals_made": 6,
+                "field_goals_attempted": 12,
+                "three_pointers_made": 4,
+                "three_pointers_attempted": 7,
+                "free_throws_made": 2,
+                "free_throws_attempted": 2,
+                "rebounds": 2,
+                "assists": 3,
+                "steals": 1,
+                "blocks": 0,
+                "turnovers": 1
+            },
+            {
+                "name": "Tal Shapira",
+                "number": 23,
+                "age": 26,
+                "position": "SF",
+                "position_rank": 1,
+                "style": "Slasher",
+                "season_ft_pct": 72,
+                "is_on_court": True,
+                "minutes_played": 30,
+                "current_stint_minutes": 5.0,
+                "fatigue_level": "Tired",
+                "current_fouls": 3,
+                "field_goals_made": 7,
+                "field_goals_attempted": 13,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 3,
+                "free_throws_made": 3,
+                "free_throws_attempted": 5,
+                "rebounds": 5,
+                "assists": 2,
+                "steals": 1,
+                "blocks": 1,
+                "turnovers": 2
+            },
+            {
+                "name": "Avi Mizrahi",
+                "number": 15,
+                "age": 28,
+                "position": "PF",
+                "position_rank": 1,
+                "style": "Post Threat",
+                "season_ft_pct": 65,
+                "is_on_court": True,
+                "minutes_played": 29,
+                "current_stint_minutes": 7.0,
+                "fatigue_level": "Exhausted",
+                "current_fouls": 2,
+                "field_goals_made": 4,
+                "field_goals_attempted": 7,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 2,
+                "free_throws_attempted": 4,
+                "rebounds": 9,
+                "assists": 1,
+                "steals": 0,
+                "blocks": 2,
+                "turnovers": 2
+            },
+            {
+                "name": "Ronen Bar",
+                "number": 11,
+                "age": 30,
+                "position": "C",
+                "position_rank": 1,
+                "style": "Rim Protector",
+                "season_ft_pct": 58,
+                "is_on_court": True,
+                "minutes_played": 27,
+                "current_stint_minutes": 3.5,
+                "fatigue_level": "Normal",
+                "current_fouls": 4,
+                "field_goals_made": 3,
+                "field_goals_attempted": 5,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 1,
+                "free_throws_attempted": 2,
+                "rebounds": 10,
+                "assists": 1,
+                "steals": 0,
+                "blocks": 4,
+                "turnovers": 1
+            },
+            # ── BENCH ─────────────────────────────────────────────────────────
+            {
+                "name": "Yoni Katz",
+                "number": 9,
+                "age": 21,
+                "position": "PG",
+                "position_rank": 2,
+                "style": "Versatile",
+                "season_ft_pct": 80,
+                "is_on_court": False,
+                "minutes_played": 10,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 3,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 2,
+                "free_throws_made": 0,
+                "free_throws_attempted": 0,
+                "rebounds": 1,
+                "assists": 2,
+                "steals": 1,
+                "blocks": 0,
+                "turnovers": 1
+            },
+            {
+                "name": "Dor Eliyahu",
+                "number": 22,
+                "age": 23,
+                "position": "PF",
+                "position_rank": 2,
+                "style": "Wing Defender",
+                "season_ft_pct": 70,
+                "is_on_court": False,
+                "minutes_played": 12,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 1,
+                "field_goals_made": 2,
+                "field_goals_attempted": 4,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 1,
+                "free_throws_made": 1,
+                "free_throws_attempted": 2,
+                "rebounds": 4,
+                "assists": 0,
+                "steals": 1,
+                "blocks": 1,
+                "turnovers": 0
+            },
+            {
+                "name": "Moshe Avraham",
+                "number": 44,
+                "age": 32,
+                "position": "C",
+                "position_rank": 2,
+                "style": "Post Threat",
+                "season_ft_pct": 55,
+                "is_on_court": False,
+                "minutes_played": 8,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 2,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 0,
+                "free_throws_attempted": 1,
+                "rebounds": 3,
+                "assists": 0,
+                "steals": 0,
+                "blocks": 1,
+                "turnovers": 1
             }
         ]
     },
+
     "away_team": {
-        "name": "Away Town Ballers",
+        "name": "Tel Aviv Sharks",
         "league_position": 3,
         "win_streak": -1,
         "offensive_rank": 5,
         "defensive_rank": 2,
-        "timeouts_remaining": 1,
-        "team_fouls": 5,
         "upcoming_schedule_density": "Medium",
         "players": [
+            # ── STARTERS (is_on_court: True) ──────────────────────────────────
             {
                 "name": "John Doe",
                 "number": 30,
                 "age": 26,
                 "position": "SG",
-                "is_on_court": True,
+                "position_rank": 1,
                 "style": "Sharpshooter",
                 "season_ft_pct": 92,
+                "is_on_court": True,
+                "minutes_played": 34,
                 "current_stint_minutes": 8.0,
-                "current_fouls": 4,
-                "minutes_played": 28,
                 "fatigue_level": "Tired",
+                "current_fouls": 4,
                 "field_goals_made": 8,
                 "field_goals_attempted": 15,
                 "three_pointers_made": 4,
@@ -102,32 +275,226 @@ GAME_STATE_EXAMPLE = {
                 "assists": 4,
                 "steals": 1,
                 "blocks": 0,
-                "turnovers": 2,
-                "position_rank": 1
+                "turnovers": 2
+            },
+            {
+                "name": "Marcus Webb",
+                "number": 5,
+                "age": 29,
+                "position": "PG",
+                "position_rank": 1,
+                "style": "Floor General",
+                "season_ft_pct": 78,
+                "is_on_court": True,
+                "minutes_played": 31,
+                "current_stint_minutes": 5.5,
+                "fatigue_level": "Normal",
+                "current_fouls": 2,
+                "field_goals_made": 4,
+                "field_goals_attempted": 9,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 3,
+                "free_throws_made": 3,
+                "free_throws_attempted": 4,
+                "rebounds": 3,
+                "assists": 7,
+                "steals": 2,
+                "blocks": 0,
+                "turnovers": 3
+            },
+            {
+                "name": "DeShawn Price",
+                "number": 21,
+                "age": 25,
+                "position": "SF",
+                "position_rank": 1,
+                "style": "Slasher",
+                "season_ft_pct": 74,
+                "is_on_court": True,
+                "minutes_played": 26,
+                "current_stint_minutes": 4.0,
+                "fatigue_level": "Normal",
+                "current_fouls": 1,
+                "field_goals_made": 5,
+                "field_goals_attempted": 10,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 2,
+                "free_throws_made": 4,
+                "free_throws_attempted": 6,
+                "rebounds": 4,
+                "assists": 1,
+                "steals": 0,
+                "blocks": 0,
+                "turnovers": 2
+            },
+            {
+                "name": "Viktor Borisov",
+                "number": 41,
+                "age": 31,
+                "position": "PF",
+                "position_rank": 1,
+                "style": "Versatile",
+                "season_ft_pct": 69,
+                "is_on_court": True,
+                "minutes_played": 25,
+                "current_stint_minutes": 6.0,
+                "fatigue_level": "Normal",
+                "current_fouls": 3,
+                "field_goals_made": 3,
+                "field_goals_attempted": 6,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 2,
+                "free_throws_made": 1,
+                "free_throws_attempted": 2,
+                "rebounds": 6,
+                "assists": 2,
+                "steals": 1,
+                "blocks": 1,
+                "turnovers": 1
+            },
+            {
+                "name": "Gal Ohayon",
+                "number": 55,
+                "age": 27,
+                "position": "C",
+                "position_rank": 1,
+                "style": "Rim Protector",
+                "season_ft_pct": 52,
+                "is_on_court": True,
+                "minutes_played": 22,
+                "current_stint_minutes": 3.0,
+                "fatigue_level": "Normal",
+                "current_fouls": 2,
+                "field_goals_made": 2,
+                "field_goals_attempted": 4,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 0,
+                "free_throws_attempted": 1,
+                "rebounds": 8,
+                "assists": 0,
+                "steals": 0,
+                "blocks": 3,
+                "turnovers": 1
+            },
+            # ── BENCH ─────────────────────────────────────────────────────────
+            {
+                "name": "Chris Nolan",
+                "number": 14,
+                "age": 24,
+                "position": "SG",
+                "position_rank": 2,
+                "style": "Sharpshooter",
+                "season_ft_pct": 83,
+                "is_on_court": False,
+                "minutes_played": 9,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 3,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 2,
+                "free_throws_made": 0,
+                "free_throws_attempted": 0,
+                "rebounds": 0,
+                "assists": 1,
+                "steals": 0,
+                "blocks": 0,
+                "turnovers": 0
+            },
+            {
+                "name": "Amir Sasi",
+                "number": 8,
+                "age": 20,
+                "position": "C",
+                "position_rank": 2,
+                "style": "Rim Protector",
+                "season_ft_pct": 48,
+                "is_on_court": False,
+                "minutes_played": 6,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 0,
+                "field_goals_attempted": 1,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 0,
+                "free_throws_attempted": 0,
+                "rebounds": 2,
+                "assists": 0,
+                "steals": 0,
+                "blocks": 1,
+                "turnovers": 0
             }
         ]
     }
 }
 
+
 ANALYSIS_REPORT_EXAMPLE = {
-    "summary": "Home team is leading by 6 with under 4 minutes left. The momentum is positive, but the away team's point guard is exploiting the drop coverage.",
-    "main_threat": "Away team's #30 is scoring easily off high pick-and-rolls due to a lack of aggressive defensive pressure.",
+    "summary": (
+        "BGU Lakers lead by 6 in CLUTCH TIME with 3:45 remaining. "
+        "Momentum is strongly in our favor on an 8-0 run, but key players are fatigued "
+        "and our center is one foul away from fouling out."
+    ),
+    "main_threat": (
+        "Away team's #30 (John Doe) has 4 fouls and is tired, but remains dangerous. "
+        "Our center #11 (Ronen Bar) is also on 4 fouls — one more and we lose our rim protection."
+    ),
     "recommended_actions": [
         {
-            "action_type": "Defensive Shift",
-            "description": "Switch from drop coverage to blitzing the pick-and-roll against #30.",
-            "expected_impact": "Force the ball out of the primary scorer's hands and make their role players beat you.",
+            "reasoning": (
+                "Avi Mizrahi (#15) is marked Exhausted after 7 continuous minutes. "
+                "In CLUTCH TIME with high risk tolerance we can stretch stars, "
+                "but a non-star exhausted PF is a defensive liability and a substitution is flagged."
+            ),
+            "action_type": "Substitution",
+            "description": "Sub out exhausted #15 (Avi Mizrahi) and bring in fresh #22 (Dor Eliyahu).",
+            "expected_impact": "Improves defensive energy on the weak side and reduces foul risk in final minutes.",
             "priority": "High",
-            "involved_player_numbers": [23, 1]
+            "involved_player_numbers": [15, 22]
         },
         {
-            "action_type": "Substitution",
-            "description": "Sub out tired big man #15 for quicker defender #8.",
-            "expected_impact": "Better mobility to execute the blitz and recover to the perimeter.",
+            "reasoning": (
+                "Opponent is in the PENALTY with 5 team fouls. "
+                "Attacking the paint forces free throws and burns clock — "
+                "both critical with a 6-point lead in CLUTCH TIME."
+            ),
+            "action_type": "Offensive Focus Shift",
+            "description": "Shift offensive focus to paint attacks — drive to the rim and draw fouls.",
+            "expected_impact": "Forces opponent into more fouls, earns free throws, and slows the game down.",
+            "priority": "High",
+            "involved_player_numbers": []
+        },
+        {
+            "reasoning": (
+                "John Doe (#30) has 4 fouls and is tired. Deliberately targeting him on offensive actions "
+                "can force his disqualification and remove the opponent's best scorer."
+            ),
+            "action_type": "Foul Strategy",
+            "description": "Run pick-and-roll actions toward #30 (John Doe) to force his 5th foul.",
+            "expected_impact": "Eliminates the opponent's primary scorer for the final 3 minutes.",
             "priority": "Medium",
-            "involved_player_numbers": [15, 8]
+            "involved_player_numbers": [30]
+        },
+        {
+            "reasoning": (
+                "With only 2 timeouts remaining and a close game, saving one timeout for a "
+                "final possession stop or late-game play call is essential."
+            ),
+            "action_type": "Pace Management",
+            "description": "Slow the pace, run full shot clock on each possession, and protect the lead.",
+            "expected_impact": "Reduces opponent's possession count and limits comeback opportunities.",
+            "priority": "Medium",
+            "involved_player_numbers": []
         }
     ],
-    "risk_assessment": "Blitzing will leave the roll man temporarily open, requiring perfect weak-side rotations to prevent easy layups.",
-    "confidence_score": 0.92
+    "risk_assessment": (
+        "With 'High' risk tolerance, keeping #11 (Ronen Bar) on court with 4 fouls is a calculated gamble. "
+        "If he fouls out we lose our primary rim protector with no equivalent backup. "
+        "The substitution of #15 mitigates overall fatigue risk without touching our star lineup."
+    ),
+    "confidence_score": 0.91
 }
