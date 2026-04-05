@@ -2,14 +2,27 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Literal
 from .examples import ANALYSIS_REPORT_EXAMPLE
 
+
 class TacticalAction(BaseModel):
     """
     Represents a single, concrete tactical recommendation from the AI.
     """
     reasoning: str = Field(
         ...,
-        description="Chain of thought: Explain exactly why this action is taken based on stats (EFF, Fatigue, Fouls) or rules (e.g., respecting the 'JUST SUBBED IN' cooldown). This must be formulated BEFORE choosing the action.",
-        json_schema_extra={"example": "Player #13 is 'Exhausted' and we are in 'CLUTCH TIME', making him a defensive liability."}
+        description=(
+            "Written BEFORE choosing the action. Must cite the section it came from "
+            "([ACTIONABLE ALERTS], [STRATEGIC CONTEXT], [AVAILABLE BENCH PERSONNEL], etc), "
+            "reference specific values (EFF, Fouls X/limit, Fatigue, Style, game phase), "
+            "and connect directly to the specific action being recommended."
+        ),
+        json_schema_extra={"example": (
+            "Per [STRATEGIC CONTEXT], Risk Tolerance is High — Rank:1 stars stay on court "
+            "unless Injured. However [ACTIONABLE ALERTS] flags Avi Mizrahi (#15) as Exhausted "
+            "(Fouls:2/5, Rank:1), which crosses the threshold even at High risk per the Risk "
+            "Tolerance directive. Dor Eliyahu (#22, PF, Fresh) is available in "
+            "[AVAILABLE BENCH PERSONNEL] to restore defensive energy for the final 3 minutes "
+            "of CLUTCH TIME."
+        )}
     )
 
     action_type: Literal[
@@ -27,26 +40,35 @@ class TacticalAction(BaseModel):
 
     description: str = Field(
         ...,
-        description="Clear, concise instruction for the coach (e.g., 'Sub out #13 for #22', 'Start blitzing the pick and roll').",
-        json_schema_extra={"example": "Sub out Player #13 and bring in #22 to improve perimeter defense."}
+        description="Short concrete instruction for the coach. Not a restatement of reasoning.",
+        json_schema_extra={"example": "Sub out #15, bring in #22."}
     )
 
     expected_impact: str = Field(
         ...,
-        description="The immediate tactical benefit expected from this action.",
-        json_schema_extra={"example": "Will improve rim protection and stop the opponent's 8-0 run in the paint."}
+        description="The immediate tactical outcome of this specific action.",
+        json_schema_extra={"example": "Restores defensive intensity at PF without disrupting positional structure."}
     )
 
     priority: Literal["High", "Medium", "Low"] = Field(
         default="Medium",
-        description="Urgency level. Alerts (Foul trouble, Critical Fatigue) usually trigger 'High' priority.",
+        description=(
+            "Urgency level. "
+            "High: addresses an [ACTIONABLE ALERT] or is a CLUTCH TIME decision. "
+            "Medium: improves the situation with no urgent trigger. "
+            "Low: optional optimization."
+        ),
         json_schema_extra={"example": "High"}
     )
 
     involved_player_numbers: List[int] = Field(
         default_factory=list,
-        description="Jersey numbers involved. For Substitution STRICTLY use format: [OUT_PLAYER_NUMBER, IN_PLAYER_NUMBER]. Empty if general team action.",
-        json_schema_extra={"example": [13, 22]}
+        description=(
+            "Jersey numbers involved. "
+            "For Substitution: [OUT_jersey, IN_jersey] — exactly two numbers, always this order. "
+            "For all other action types: [] (empty list)."
+        ),
+        json_schema_extra={"example": [15, 22]}
     )
 
 
@@ -56,36 +78,64 @@ class AnalysisReport(BaseModel):
     """
     summary: str = Field(
         ...,
-        description="Concise overview of current game flow, integrating the Game Phase (e.g., CLUTCH TIME) and overall momentum.",
-        json_schema_extra={"example": "We are leading by 6 in CLUTCH TIME, but the opponent is in the penalty and adapting to our drop coverage."}
+        description="Concise overview of current game situation, integrating the Game Phase (e.g., CLUTCH TIME) and momentum.",
+        json_schema_extra={"example": (
+            "BGU Lakers lead by 6 in CLUTCH TIME with 3 minutes left. "
+            "Momentum is strongly in our favor on an 8-0 run but our center is one foul from disqualification."
+        )}
     )
 
     main_threat: str = Field(
         ...,
-        description="The most critical challenge identified from the [OPPONENT THREAT ON COURT] or [ACTIONABLE ALERTS].",
-        json_schema_extra={"example": "Our primary center has 4 fouls and is exhausted, risking our 'Protect the Paint' strategy."}
+        description=(
+            "The single most critical problem identified from [OPPONENT THREAT ON COURT] or [ACTIONABLE ALERTS]. "
+            "One sentence, specific — name the player or situation."
+        ),
+        json_schema_extra={"example": (
+            "Ronen Bar (#11) has Fouls:4/5 — one more foul removes our primary rim protector "
+            "in the most critical minutes of the game."
+        )}
     )
 
     recommended_actions: List[TacticalAction] = Field(
         ...,
         min_length=1,
-        max_length=4,
-        description="A prioritized list of concrete moves to counter the threat, strictly adhering to the Coach's Risk Tolerance and Game Objective."
+        max_length=6,
+        description=(
+            "Ordered list of TacticalActions from highest to lowest priority. "
+            "Address all [ACTIONABLE ALERTS] within this limit — Mandatory Subs first, "
+            "Risk Warnings second, tactical adjustments third."
+        )
     )
 
     risk_assessment: str = Field(
         ...,
-        description="Analysis of potential downsides, specifically addressing how the recommendations fit the coach's 'Risk Tolerance'.",
-        json_schema_extra={"example": "Given our 'High' risk tolerance, leaving the star in with 4 fouls is a calculated gamble to secure the win."}
+        description=(
+            "Honest evaluation of the downside of your recommendations. Must address: "
+            "what could go wrong if these actions are taken, whether they stretch or respect "
+            "Risk Tolerance, and if confidence_score is below 0.7, the specific source of uncertainty."
+        ),
+        json_schema_extra={"example": (
+            "Keeping Ronen Bar (#11) on court with Fouls:4/5 is a calculated gamble under "
+            "High risk tolerance. If he fouls out we lose our primary rim protector with no "
+            "equivalent C on the bench. Confidence is reduced because sub options at C are limited."
+        )}
     )
 
     confidence_score: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="AI's certainty (0.0 to 1.0) based on how clearly the stats support the recommended actions.",
-        json_schema_extra={"example": 0.88}
+        description=(
+            "Your self-assessed certainty (0.0 to 1.0) that your recommendations are correct. "
+            "Rate output quality — not game situation quality. "
+            "High when the correct actions are unambiguous from the data. "
+            "Low when signals conflict, bench is depleted, or directives and alerts pull in opposite directions. "
+            "Explain scores below 0.7 in risk_assessment."
+        ),
+        json_schema_extra={"example": 0.74}
     )
+
     model_config = ConfigDict(
         json_schema_extra={"example": ANALYSIS_REPORT_EXAMPLE}
     )

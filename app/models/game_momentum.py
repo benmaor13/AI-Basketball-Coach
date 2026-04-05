@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Literal
-from app.core.constants import *
+from app.core.constants import SIGNIFICANT_RUN_THRESHOLD
 class GameMomentum(BaseModel):
     """
     some properties to identify psychological effects on the game
@@ -49,14 +49,14 @@ class GameMomentum(BaseModel):
 
         if self.home_team_run >= SIGNIFICANT_RUN_THRESHOLD and self.overall_trend in ["Slight Away", "Strong Away", "Neutral"]:
             raise ValueError(
-                f"Contradiction: Home team is on a {self.home_team_run}-0 run, "
+                f"Contradiction: Home team is on a {self.home_team_run}run, "
                 f"but momentum trend is set to '{self.overall_trend}'. "
                 "Trend must  favor the home team during a significant home run."
             )
 
         if self.away_team_run >= SIGNIFICANT_RUN_THRESHOLD and self.overall_trend in ["Slight Home", "Strong Home", "Neutral"]:
             raise ValueError(
-                f"Contradiction: Away team is on a {self.away_team_run}-0 run, "
+                f"Contradiction: Away team is on a {self.away_team_run} run, "
                 f"but momentum trend is set to '{self.overall_trend}'. "
                 "Trend must  favor the away team during a significant away run."
             )

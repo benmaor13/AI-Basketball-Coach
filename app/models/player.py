@@ -76,7 +76,7 @@ class Player(BaseModel):
     current_fouls: int = Field(
         default=0,
         ge=0,
-        le=6,
+        le=10,
         description="Current fouls in the game. Upper limit depends on league rules and is validated by GameState.",
         json_schema_extra={"example": 2}
     )

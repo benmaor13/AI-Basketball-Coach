@@ -12,7 +12,8 @@ class CoachDirectives(BaseModel):
         "Attack the Paint",
         "Pick & Roll Heavy",
         "Feed the Post",
-        "Motion Offense"
+        "Motion Offense",
+        "Auto"
     ] = Field(
         default="Motion Offense",
         description="The offensive mechanism the coach wants to run."
@@ -23,7 +24,8 @@ class CoachDirectives(BaseModel):
         "Deny Perimeter",
         "Blitz & Trap",
         "Switch Everything",
-        "Zone Defense"
+        "Zone Defense",
+        "Auto"
     ] = Field(
         default="Protect the Paint",
         description="The defensive scheme the coach wants to apply."
@@ -42,7 +44,8 @@ class CoachDirectives(BaseModel):
         "Win Now",
         "Develop Youth",
         "Kill the Clock",
-        "Desperate Comeback"
+        "Desperate Comeback",
+        "Auto",
     ] = Field(
         default="Win Now",
         description="The current meta-goal that drives the AI's overall priority logic."
