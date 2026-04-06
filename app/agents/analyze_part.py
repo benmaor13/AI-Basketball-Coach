@@ -1,7 +1,6 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from openai import RateLimitError, APITimeoutError, APIConnectionError, AuthenticationError
-
 from app.models.game_state import GameState
 from app.models.analysis_result import AnalysisReport
 from app.agents.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE, build_prompt_variables
@@ -13,6 +12,9 @@ logger = get_logger(__name__)
 
 
 class AnalystAgent:
+    """
+    Responsible for the connection with openai
+    """
     def __init__(self):
         settings = get_settings()
 
@@ -36,15 +38,12 @@ class AnalystAgent:
     async def analyze(self, state: GameState) -> AnalysisReport:
         """
         Autonomous analysis loop with confidence-based retry.
-
         On each attempt, builds the prompt and calls OpenAI via LangChain.
-        If confidence falls below CONFIDENCE_RETRY_THRESHOLD, the agent
-        autonomously retries — injecting the AI's own self_critique into
+        If confidence falls below CONFIDENCE_RETRY_THRESHOLD in constants.py, the agent
+        autonomously retries(using the self.critique that is always made)
         the next prompt so the retry is targeted, not random.
-
         No human involvement between attempts. Returns the best result
         if the threshold is never reached after MAX_ANALYSIS_RETRIES.
-
         Raises specific OpenAI exceptions so main.py can return
         the correct HTTP status code to the client.
         """
@@ -55,7 +54,7 @@ class AnalystAgent:
             while attempt <= MAX_ANALYSIS_RETRIES:
                 is_retry = attempt > 0
 
-                # On retry, pass previous report so self_critique is injected
+                # On retry, pass previous report so self_critique will be used
                 prompt_vars = build_prompt_variables(
                     state,
                     previous_report=best_report if is_retry else None
@@ -74,7 +73,6 @@ class AnalystAgent:
 
                 chain = self.prompt_template | self.llm
                 report = await chain.ainvoke(prompt_vars)
-
                 logger.info(
                     f"Attempt {attempt + 1} complete — "
                     f"{len(report.recommended_actions)} recommendations "
@@ -95,12 +93,13 @@ class AnalystAgent:
 
                 attempt += 1
 
-            # Exhausted retries — return best result achieved
+            # reached the maximum retries — return best result achieved till now
             logger.warning(
                 f"Max retries reached — returning best result "
                 f"(confidence: {best_report.confidence_score})"
             )
             return best_report
+        # Handling errors
         except AuthenticationError:
             logger.error("OpenAI authentication failed — check BA_OPENAI_API_KEY in .env")
             raise

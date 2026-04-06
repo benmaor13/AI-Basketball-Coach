@@ -9,8 +9,19 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 # instance of the FastAPI
 app = FastAPI(
-    title="BasketballAI API",
-    description="Real-time tactical analysis system for basketball coaches",
+    title="BasketballAI 🏀",
+    description="""
+## Real-time tactical analysis for basketball coaches
+
+Send a live game state and get back concrete, prioritized recommendations — 
+who to sub, when to call a timeout, how to adjust your defense.
+
+### How to test
+1. Click **POST /analyze** below
+2. Click **Try it out**
+3. Click **Execute** — the example is pre-filled
+4. Scroll down to **"Server response"** — the analysis appears under **Response body**
+    """,
     version="1.0.0"
 )
 # Initialize the Agent

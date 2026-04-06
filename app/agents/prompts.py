@@ -159,6 +159,12 @@ No exception regardless of context:
 - A player can only be subbed in if they appear in 
   [AVAILABLE BENCH PERSONNEL]. Players in [ON COURT PERSONNEL] 
   are already playing and cannot be subbed in.
+- Never recommend more than one Timeout action in a single report — 
+  only one timeout can be called per stoppage of play.
+  Only include actions that tell the coach to DO something. 
+-Never include actions framed as "avoid X" or "do not X" — 
+these are not recommendations, they are observations. 
+State them in risk_assessment instead.
   
 MOMENTUM
 Note that A scoring run in [STRATEGIC CONTEXT] is a valid standalone trigger for a Timeout even without an [ACTIONABLE ALERT]:
@@ -267,9 +273,14 @@ def build_prompt_variables(state, previous_report=None) -> dict:
         retry_context = (
             f"\nRETRY CONTEXT\n"
             f"Your previous analysis had low confidence ({previous_report.confidence_score}).\n"
-            f"You identified these uncertainties: "
-            f"{previous_report.self_critique if previous_report.self_critique else 'none specified'}\n"
-            f"Address these directly in your revised analysis."
+            f"You identified: {previous_report.self_critique}\n\n"
+            f"Before revising, explicitly verify each of these:\n"
+            f"1. Count the alerts in [ACTIONABLE ALERTS] — have you addressed every single one?\n"
+            f"2. Check each substitution — is the incoming player in [AVAILABLE BENCH PERSONNEL — ONLY THESE PLAYERS CAN BE SUBBED IN]?\n"
+            f"3. Check positions — does each substitution match position groups (PG/SG, SF/PF, C/PF)?\n"
+            f"4. Have you checked [OPPONENT THREAT ON COURT] for observation-driven opportunities?\n"
+            f"5. Is your action count at least equal to the number of alerts?\n\n"
+            f"Now provide a revised AnalysisReport addressing any gaps found above.\n"
         )
     else:
         retry_context = ""

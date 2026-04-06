@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     model_name: str = "gpt-4o"
 
-    # Configuration for loading the environment data, prefix to prevent from global collisions
+    # Configuration for loading the environment data, prefix to prevent from global collisions that might happen
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

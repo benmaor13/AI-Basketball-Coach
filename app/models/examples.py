@@ -21,8 +21,6 @@ DEVELOP_YOUTH_EXAMPLE = {
         "away_team_run": 0,
         "crowd_intensity": "Engaged"
     },
-
-    # Develop Youth — AI must sub in U25 players regardless of EFF
     "directives": {
         "offensive_strategy": "Motion Offense",
         "defensive_focus": "Protect the Paint",
@@ -38,8 +36,6 @@ DEVELOP_YOUTH_EXAMPLE = {
         "defensive_rank": 4,
         "upcoming_schedule_density": "High",
         "players": [
-            # ── STARTERS — all veterans (age > 25) ───────────────────────────
-            # Key test: AI should sub these out in favor of U25 bench players
             {
                 "name": "Noam Peretz",
                 "number": 7,
@@ -165,12 +161,10 @@ DEVELOP_YOUTH_EXAMPLE = {
                 "blocks": 3,
                 "turnovers": 0
             },
-            # ── BENCH — all U25 players ───────────────────────────────────────
-            # Key test: AI must sub ALL of these in despite lower EFF
             {
                 "name": "Yoni Katz",
                 "number": 9,
-                "age": 21,   # U25 — must be subbed in
+                "age": 21,
                 "position": "PG",
                 "position_rank": 2,
                 "style": "Sharpshooter",
@@ -195,7 +189,7 @@ DEVELOP_YOUTH_EXAMPLE = {
             {
                 "name": "Dor Eliyahu",
                 "number": 22,
-                "age": 20,   # U25 — must be subbed in
+                "age": 20,
                 "position": "PF",
                 "position_rank": 2,
                 "style": "Wing Defender",
@@ -469,7 +463,6 @@ WIN_NOW_CLEAN_EXAMPLE = {
         "defensive_rank": 4,
         "upcoming_schedule_density": "High",
         "players": [
-            # ── STARTERS — one weak player who should be rested ──────────────
             {
                 "name": "Noam Peretz",
                 "number": 7,
@@ -595,8 +588,6 @@ WIN_NOW_CLEAN_EXAMPLE = {
                 "blocks": 3,
                 "turnovers": 0
             },
-            # ── BENCH — one player with HIGHER EFF than a starter ────────────
-            # Key test: Win Now should sub in Yoni if his EFF > a starter
             {
                 "name": "Yoni Katz",
                 "number": 9,
@@ -862,7 +853,6 @@ WIN_NOW_CLEAN_EXAMPLE = {
     }
 }
 DESPERATE_COMEBACK_EXAMPLE = {
-    # ── Game situation — losing by 10, last 2 minutes, need to score fast ────
     "venue_type": "Away",
     "target_team": "Home",
     "home_score": 74,
@@ -880,7 +870,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         "league_format": "FIBA"
     },
 
-    # ── Opponent on a run, crowd hostile ────────────────────────────────────
     "momentum": {
         "overall_trend": "Strong Away",
         "home_team_run": 0,
@@ -888,10 +877,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         "crowd_intensity": "Hostile"
     },
 
-    # ── Desperate Comeback directives ────────────────────────────────────────
-    # Low risk tolerance: sub out tired players immediately regardless of rank
-    # Pace & Space: 3PT% will appear in player lines
-    # Desperate Comeback: 3PT% will also appear + AI should push pace + foul strategy
     "directives": {
         "offensive_strategy": "Pace & Space",
         "defensive_focus": "Deny Perimeter",
@@ -899,7 +884,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         "game_objective": "Desperate Comeback"
     },
 
-    # ── Home team — BGU Lakers (the team we're coaching) ────────────────────
     "home_team": {
         "name": "BGU Lakers",
         "league_position": 1,
@@ -908,7 +892,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         "defensive_rank": 4,
         "upcoming_schedule_density": "High",
         "players": [
-            # ── STARTERS ──────────────────────────────────────────────────────
             {
                 "name": "Noam Peretz",
                 "number": 7,
@@ -1034,16 +1017,13 @@ DESPERATE_COMEBACK_EXAMPLE = {
                 "blocks": 2,
                 "turnovers": 1
             },
-            # ── BENCH ──────────────────────────────────────────────────────────
-            # Two fresh Sharpshooters on bench — key test:
-            # AI should sub them in for Pace & Space + Desperate Comeback
             {
                 "name": "Yoni Katz",
                 "number": 9,
                 "age": 21,
                 "position": "PG",
                 "position_rank": 2,
-                "style": "Sharpshooter",  # changed from Versatile — better for this test
+                "style": "Sharpshooter",
                 "season_ft_pct": 82,
                 "is_on_court": False,
                 "minutes_played": 8,
@@ -1115,7 +1095,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         ]
     },
 
-    # ── Away team — Tel Aviv Sharks (opponent, winning) ──────────────────────
     "away_team": {
         "name": "Tel Aviv Sharks",
         "league_position": 3,
@@ -1124,7 +1103,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
         "defensive_rank": 2,
         "upcoming_schedule_density": "Medium",
         "players": [
-            # ── STARTERS ──────────────────────────────────────────────────────
             {
                 "name": "John Doe",
                 "number": 30,
@@ -1250,7 +1228,6 @@ DESPERATE_COMEBACK_EXAMPLE = {
                 "blocks": 3,
                 "turnovers": 1
             },
-            # ── BENCH ──────────────────────────────────────────────────────────
             {
                 "name": "Chris Nolan",
                 "number": 14,
@@ -1344,7 +1321,6 @@ GAME_STATE_EXAMPLE = {
         "defensive_rank": 4,
         "upcoming_schedule_density": "High",
         "players": [
-            # ── STARTERS (is_on_court: True) ──────────────────────────────────
             {
                 "name": "Noam Peretz",
                 "number": 7,
@@ -1470,7 +1446,6 @@ GAME_STATE_EXAMPLE = {
                 "blocks": 4,
                 "turnovers": 1
             },
-            # ── BENCH ─────────────────────────────────────────────────────────
             {
                 "name": "Yoni Katz",
                 "number": 9,
@@ -1557,7 +1532,6 @@ GAME_STATE_EXAMPLE = {
         "defensive_rank": 2,
         "upcoming_schedule_density": "Medium",
         "players": [
-            # ── STARTERS (is_on_court: True) ──────────────────────────────────
             {
                 "name": "John Doe",
                 "number": 30,
@@ -1683,7 +1657,6 @@ GAME_STATE_EXAMPLE = {
                 "blocks": 3,
                 "turnovers": 1
             },
-            # ── BENCH ─────────────────────────────────────────────────────────
             {
                 "name": "Chris Nolan",
                 "number": 14,
@@ -1739,7 +1712,7 @@ GAME_STATE_EXAMPLE = {
 }
 
 
-ANALYSIS_REPORT_EXAMPLE = {
+ANALYSIS_REPORT_EXAMPLE = {  # This one is not ai input example- do not use it.
     "summary": (
         "BGU Lakers lead by 6 in CLUTCH TIME with 3:45 remaining. "
         "Momentum is strongly in our favor on an 8 point run, but our center "
@@ -1809,57 +1782,44 @@ ANALYSIS_REPORT_EXAMPLE = {
     ),
     "confidence_score": 0.91
 }
-LOW_CONFIDENCE_EXAMPLE = {
-    # ── Scenario: CLUTCH TIME, losing, terrible bench, conflicting directives ─
-    # Designed to create maximum AI uncertainty:
-    # - Must sub exhausted star (Low risk tolerance) but only bench player
-    #   is also tired with fouls and terrible FT% (conflicts Kill the Clock)
-    # - Star in foul trouble but can't be rested (no good replacement)
-    # - Conflicting directives: Kill the Clock needs high FT%, but we're losing
-    # Expected: confidence 0.45-0.60, self_critique populated, retry triggered
-
-    "venue_type": "Away",
+RETRY_IMPROVEMENT_EXAMPLE = {
+    "venue_type": "Home",
     "target_team": "Home",
-    "home_score": 71,
-    "away_score": 76,
+    "home_score": 81,
+    "away_score": 77,
     "current_period": 4,
-    "minutes_remaining": 1,
-    "seconds_remaining": 20,
+    "minutes_remaining": 3,
+    "seconds_remaining": 30,
     "possession": "Away",
     "home_timeouts_remaining": 1,
     "away_timeouts_remaining": 2,
     "home_team_fouls": 4,
-    "away_team_fouls": 2,
+    "away_team_fouls": 3,
 
     "rules": {"league_format": "FIBA"},
 
     "momentum": {
-        "overall_trend": "Strong Away",
+        "overall_trend": "Slight Away",
         "home_team_run": 0,
-        "away_team_run": 8,
-        "crowd_intensity": "Hostile"
+        "away_team_run": 7,
+        "crowd_intensity": "Engaged"
     },
 
-    # ── Conflicting directives — Kill the Clock when losing = contradiction ──
-    # Kill the Clock needs high FT% players but we're down 5 with 80 seconds left
-    # Low risk tolerance forces subbing exhausted players
-    # But the only bench player has terrible FT% and is also tired
     "directives": {
         "offensive_strategy": "Attack the Paint",
         "defensive_focus": "Protect the Paint",
-        "risk_tolerance": "Low",
-        "game_objective": "Kill the Clock"
+        "risk_tolerance": "Medium",
+        "game_objective": "Win Now"
     },
 
     "home_team": {
         "name": "BGU Lakers",
         "league_position": 1,
-        "win_streak": -2,
+        "win_streak": 2,
         "offensive_rank": 2,
         "defensive_rank": 4,
         "upcoming_schedule_density": "High",
         "players": [
-            # ── STARTERS — all in some kind of trouble ────────────────────────
             {
                 "name": "Noam Peretz",
                 "number": 7,
@@ -1869,21 +1829,21 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Floor General",
                 "season_ft_pct": 88,
                 "is_on_court": True,
-                "minutes_played": 37,
-                "current_stint_minutes": 9.0,
-                "fatigue_level": "Tired",
-                "current_fouls": 4,  # one from fouling out
-                "field_goals_made": 3,
-                "field_goals_attempted": 10,
+                "minutes_played": 30,
+                "current_stint_minutes": 6.0,
+                "fatigue_level": "Normal",
+                "current_fouls": 4,
+                "field_goals_made": 4,
+                "field_goals_attempted": 9,
                 "three_pointers_made": 1,
-                "three_pointers_attempted": 4,
-                "free_throws_made": 2,
-                "free_throws_attempted": 2,
+                "three_pointers_attempted": 3,
+                "free_throws_made": 3,
+                "free_throws_attempted": 3,
                 "rebounds": 2,
-                "assists": 4,
+                "assists": 7,
                 "steals": 1,
                 "blocks": 0,
-                "turnovers": 3
+                "turnovers": 2
             },
             {
                 "name": "Lior Cohen",
@@ -1894,21 +1854,21 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Sharpshooter",
                 "season_ft_pct": 85,
                 "is_on_court": True,
-                "minutes_played": 35,
-                "current_stint_minutes": 7.0,
+                "minutes_played": 28,
+                "current_stint_minutes": 4.0,
                 "fatigue_level": "Normal",
-                "current_fouls": 2,
-                "field_goals_made": 4,
-                "field_goals_attempted": 11,
-                "three_pointers_made": 2,
+                "current_fouls": 1,
+                "field_goals_made": 5,
+                "field_goals_attempted": 10,
+                "three_pointers_made": 3,
                 "three_pointers_attempted": 6,
-                "free_throws_made": 1,
-                "free_throws_attempted": 1,
-                "rebounds": 1,
-                "assists": 2,
-                "steals": 1,
+                "free_throws_made": 2,
+                "free_throws_attempted": 2,
+                "rebounds": 2,
+                "assists": 3,
+                "steals": 2,
                 "blocks": 0,
-                "turnovers": 2
+                "turnovers": 1
             },
             {
                 "name": "Tal Shapira",
@@ -1919,20 +1879,20 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Slasher",
                 "season_ft_pct": 72,
                 "is_on_court": True,
-                "minutes_played": 36,
-                "current_stint_minutes": 8.0,
-                "fatigue_level": "Exhausted",  # must be subbed — Low risk tolerance
-                "current_fouls": 3,
-                "field_goals_made": 3,
+                "minutes_played": 32,
+                "current_stint_minutes": 7.0,
+                "fatigue_level": "Exhausted",
+                "current_fouls": 2,
+                "field_goals_made": 4,
                 "field_goals_attempted": 9,
                 "three_pointers_made": 0,
                 "three_pointers_attempted": 2,
-                "free_throws_made": 1,
+                "free_throws_made": 2,
                 "free_throws_attempted": 3,
-                "rebounds": 3,
+                "rebounds": 4,
                 "assists": 1,
                 "steals": 0,
-                "blocks": 0,
+                "blocks": 1,
                 "turnovers": 2
             },
             {
@@ -1944,16 +1904,16 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Post Threat",
                 "season_ft_pct": 65,
                 "is_on_court": True,
-                "minutes_played": 34,
-                "current_stint_minutes": 6.0,
-                "fatigue_level": "Normal",
+                "minutes_played": 29,
+                "current_stint_minutes": 5.0,
+                "fatigue_level": "Tired",
                 "current_fouls": 2,
-                "field_goals_made": 4,
-                "field_goals_attempted": 7,
+                "field_goals_made": 3,
+                "field_goals_attempted": 6,
                 "three_pointers_made": 0,
                 "three_pointers_attempted": 0,
-                "free_throws_made": 2,
-                "free_throws_attempted": 4,
+                "free_throws_made": 1,
+                "free_throws_attempted": 3,
                 "rebounds": 7,
                 "assists": 1,
                 "steals": 0,
@@ -1969,51 +1929,96 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Rim Protector",
                 "season_ft_pct": 58,
                 "is_on_court": True,
-                "minutes_played": 33,
-                "current_stint_minutes": 5.0,
+                "minutes_played": 27,
+                "current_stint_minutes": 3.5,
                 "fatigue_level": "Normal",
-                "current_fouls": 4,  # also one from fouling out
-                "field_goals_made": 2,
-                "field_goals_attempted": 4,
+                "current_fouls": 2,
+                "field_goals_made": 3,
+                "field_goals_attempted": 5,
                 "three_pointers_made": 0,
                 "three_pointers_attempted": 0,
                 "free_throws_made": 1,
-                "free_throws_attempted": 3,
-                "rebounds": 8,
-                "assists": 0,
+                "free_throws_attempted": 2,
+                "rebounds": 9,
+                "assists": 1,
                 "steals": 0,
-                "blocks": 3,
+                "blocks": 4,
                 "turnovers": 1
             },
-            # ── BENCH — only ONE player available, and they're bad ────────────
-            # This is the core of the low confidence scenario:
-            # Kill the Clock needs high FT% but this player has 42%
-            # Low risk tolerance says sub Tal Shapira but replacement is terrible
-            # AI must make a bad choice and knows it
             {
                 "name": "Yoni Katz",
                 "number": 9,
                 "age": 21,
-                "position": "PG",   # wrong position for SF (Tal Shapira)
+                "position": "PG",
                 "position_rank": 2,
                 "style": "Versatile",
-                "season_ft_pct": 42,  # terrible — Kill the Clock liability
+                "season_ft_pct": 80,
+                "is_on_court": False,
+                "minutes_played": 10,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 3,
+                "three_pointers_made": 1,
+                "three_pointers_attempted": 2,
+                "free_throws_made": 0,
+                "free_throws_attempted": 0,
+                "rebounds": 1,
+                "assists": 2,
+                "steals": 1,
+                "blocks": 0,
+                "turnovers": 0
+            },
+            {
+                "name": "Dor Eliyahu",
+                "number": 22,
+                "age": 23,
+                "position": "PF",
+                "position_rank": 2,
+                "style": "Wing Defender",
+                "season_ft_pct": 70,
                 "is_on_court": False,
                 "minutes_played": 8,
                 "current_stint_minutes": 0.0,
-                "fatigue_level": "Normal",
-                "current_fouls": 2,
-                "field_goals_made": 0,
-                "field_goals_attempted": 4,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 2,
                 "three_pointers_made": 0,
-                "three_pointers_attempted": 2,
+                "three_pointers_attempted": 1,
                 "free_throws_made": 1,
-                "free_throws_attempted": 4,
-                "rebounds": 0,
-                "assists": 1,
+                "free_throws_attempted": 2,
+                "rebounds": 3,
+                "assists": 0,
+                "steals": 1,
+                "blocks": 1,
+                "turnovers": 0
+            },
+            {
+                "name": "Moshe Avraham",
+                "number": 44,
+                "age": 32,
+                "position": "C",
+                "position_rank": 2,
+                "style": "Post Threat",
+                "season_ft_pct": 55,
+                "is_on_court": False,
+                "minutes_played": 6,
+                "current_stint_minutes": 0.0,
+                "fatigue_level": "Fresh",
+                "current_fouls": 0,
+                "field_goals_made": 1,
+                "field_goals_attempted": 2,
+                "three_pointers_made": 0,
+                "three_pointers_attempted": 0,
+                "free_throws_made": 0,
+                "free_throws_attempted": 1,
+                "rebounds": 3,
+                "assists": 0,
                 "steals": 0,
-                "blocks": 0,
-                "turnovers": 2
+                "blocks": 1,
+                "turnovers": 0
             }
         ]
     },
@@ -2021,7 +2026,7 @@ LOW_CONFIDENCE_EXAMPLE = {
     "away_team": {
         "name": "Tel Aviv Sharks",
         "league_position": 3,
-        "win_streak": 4,
+        "win_streak": 3,
         "offensive_rank": 5,
         "defensive_rank": 2,
         "upcoming_schedule_density": "Medium",
@@ -2035,19 +2040,19 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Sharpshooter",
                 "season_ft_pct": 92,
                 "is_on_court": True,
-                "minutes_played": 36,
-                "current_stint_minutes": 8.0,
+                "minutes_played": 32,
+                "current_stint_minutes": 7.0,
                 "fatigue_level": "Normal",
-                "current_fouls": 1,
-                "field_goals_made": 8,
-                "field_goals_attempted": 14,
-                "three_pointers_made": 4,
-                "three_pointers_attempted": 7,
-                "free_throws_made": 4,
-                "free_throws_attempted": 4,
+                "current_fouls": 4,
+                "field_goals_made": 7,
+                "field_goals_attempted": 13,
+                "three_pointers_made": 3,
+                "three_pointers_attempted": 6,
+                "free_throws_made": 3,
+                "free_throws_attempted": 3,
                 "rebounds": 2,
                 "assists": 3,
-                "steals": 2,
+                "steals": 1,
                 "blocks": 0,
                 "turnovers": 1
             },
@@ -2060,10 +2065,10 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Floor General",
                 "season_ft_pct": 78,
                 "is_on_court": True,
-                "minutes_played": 34,
-                "current_stint_minutes": 6.0,
+                "minutes_played": 30,
+                "current_stint_minutes": 5.0,
                 "fatigue_level": "Normal",
-                "current_fouls": 1,
+                "current_fouls": 2,
                 "field_goals_made": 3,
                 "field_goals_attempted": 7,
                 "three_pointers_made": 1,
@@ -2085,19 +2090,19 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Slasher",
                 "season_ft_pct": 74,
                 "is_on_court": True,
-                "minutes_played": 30,
-                "current_stint_minutes": 5.0,
+                "minutes_played": 26,
+                "current_stint_minutes": 4.0,
                 "fatigue_level": "Normal",
                 "current_fouls": 2,
-                "field_goals_made": 3,
-                "field_goals_attempted": 6,
+                "field_goals_made": 4,
+                "field_goals_attempted": 8,
                 "three_pointers_made": 0,
                 "three_pointers_attempted": 1,
                 "free_throws_made": 3,
                 "free_throws_attempted": 4,
-                "rebounds": 3,
+                "rebounds": 4,
                 "assists": 1,
-                "steals": 1,
+                "steals": 0,
                 "blocks": 0,
                 "turnovers": 1
             },
@@ -2110,7 +2115,7 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Versatile",
                 "season_ft_pct": 69,
                 "is_on_court": True,
-                "minutes_played": 28,
+                "minutes_played": 24,
                 "current_stint_minutes": 4.0,
                 "fatigue_level": "Normal",
                 "current_fouls": 2,
@@ -2120,9 +2125,9 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "three_pointers_attempted": 2,
                 "free_throws_made": 1,
                 "free_throws_attempted": 2,
-                "rebounds": 4,
+                "rebounds": 5,
                 "assists": 2,
-                "steals": 0,
+                "steals": 1,
                 "blocks": 1,
                 "turnovers": 1
             },
@@ -2135,7 +2140,7 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Rim Protector",
                 "season_ft_pct": 52,
                 "is_on_court": True,
-                "minutes_played": 25,
+                "minutes_played": 22,
                 "current_stint_minutes": 3.0,
                 "fatigue_level": "Normal",
                 "current_fouls": 1,
@@ -2143,12 +2148,12 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "field_goals_attempted": 4,
                 "three_pointers_made": 0,
                 "three_pointers_attempted": 0,
-                "free_throws_made": 1,
-                "free_throws_attempted": 2,
-                "rebounds": 6,
+                "free_throws_made": 0,
+                "free_throws_attempted": 1,
+                "rebounds": 7,
                 "assists": 0,
                 "steals": 0,
-                "blocks": 2,
+                "blocks": 3,
                 "turnovers": 1
             },
             {
@@ -2160,7 +2165,7 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Sharpshooter",
                 "season_ft_pct": 83,
                 "is_on_court": False,
-                "minutes_played": 9,
+                "minutes_played": 8,
                 "current_stint_minutes": 0.0,
                 "fatigue_level": "Fresh",
                 "current_fouls": 0,
@@ -2171,7 +2176,7 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "free_throws_made": 0,
                 "free_throws_attempted": 0,
                 "rebounds": 0,
-                "assists": 0,
+                "assists": 1,
                 "steals": 0,
                 "blocks": 0,
                 "turnovers": 0
@@ -2185,7 +2190,7 @@ LOW_CONFIDENCE_EXAMPLE = {
                 "style": "Rim Protector",
                 "season_ft_pct": 48,
                 "is_on_court": False,
-                "minutes_played": 6,
+                "minutes_played": 5,
                 "current_stint_minutes": 0.0,
                 "fatigue_level": "Fresh",
                 "current_fouls": 0,

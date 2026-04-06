@@ -1,4 +1,3 @@
-# Constants that are used to define specific game states and analyze the situation.
 # A game is "clutch time" when it's the last period or overtime,under 2 minutes,
 # and score difference is not more than 6 points
 CLUTCH_TIME_MINUTES = 2

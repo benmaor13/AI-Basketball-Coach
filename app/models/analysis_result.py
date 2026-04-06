@@ -144,12 +144,10 @@ class AnalysisReport(BaseModel):
         json_schema_extra={"example": 0.74}
     )
     self_critique: str = Field(
-        default="",
+        ...,
         description=(
-            "Only populate when confidence_score is below 0.7. "
-            "Explain specifically why confidence is low — what is uncertain, "
-            "what information is missing, or what competing priorities conflict. "
-            "Leave empty when confidence is 0.7 or above."
+            "Always populate. Honest self-assessment of tradeoffs and uncertainties. "
+            "Never leave empty."
         )
     )
 
