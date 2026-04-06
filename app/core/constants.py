@@ -27,6 +27,9 @@ OPPONENT_FOUL_TROUBLE_BUFFER = 2
 
 # Players under this age are considered "youth" for development objectives
 YOUTH_AGE_THRESHOLD = 25
+# Autonomous retry loop thresholds
+CONFIDENCE_RETRY_THRESHOLD = 0.99  # retry if confidence below this
+MAX_ANALYSIS_RETRIES = 2           # max retry attempts before accepting best result
 
 # A scoring run of this many points or more is considered a significant momentum shift
 SIGNIFICANT_RUN_THRESHOLD = 6

@@ -16,7 +16,7 @@ from .team import Team
 from .league_rules import LeagueRules
 from .game_momentum import GameMomentum
 from .coach_directives import CoachDirectives
-from .examples import GAME_STATE_EXAMPLE,DESPERATE_COMEBACK_EXAMPLE, DEVELOP_YOUTH_EXAMPLE,WIN_NOW_CLEAN_EXAMPLE
+from .examples import LOW_CONFIDENCE_EXAMPLE,GAME_STATE_EXAMPLE,DESPERATE_COMEBACK_EXAMPLE, DEVELOP_YOUTH_EXAMPLE,WIN_NOW_CLEAN_EXAMPLE
 
 
 class GameState(BaseModel):
@@ -508,5 +508,5 @@ class GameState(BaseModel):
         return "\n".join(summary)
 
     model_config = ConfigDict(
-        json_schema_extra={"example": DEVELOP_YOUTH_EXAMPLE}
+        json_schema_extra={"example": LOW_CONFIDENCE_EXAMPLE}
     )

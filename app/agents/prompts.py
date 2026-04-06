@@ -230,6 +230,7 @@ expected_impact: "Forces his 5th foul and removes the opponent's primary scorer.
 priority:        "Medium"
 involved_player_numbers: [30]
 """
+
 USER_PROMPT_TEMPLATE = """\
 {game_summary_text}
 
@@ -247,19 +248,32 @@ Risk Tolerance — {risk_tolerance}:
 
 Game Objective — {game_objective}:
 {game_objective_instruction}
+{retry_context}
 """
-
 
 # Prompt variable builder
 # All prompt logic lives here — AnalystAgent just calls this function.
-
-def build_prompt_variables(state) -> dict:
+def build_prompt_variables(state, previous_report=None) -> dict:
     """
     Assembles all variables for the user prompt template.
     Both the directive label (e.g. "Attack the Paint") and its tactical
     instruction are injected — label gives context, instruction gives commands.
+    If previous_report is provided, retry context is injected into the prompt.
     """
     d = state.directives
+
+    # Build retry context if this is a retry attempt
+    if previous_report:
+        retry_context = (
+            f"\nRETRY CONTEXT\n"
+            f"Your previous analysis had low confidence ({previous_report.confidence_score}).\n"
+            f"You identified these uncertainties: "
+            f"{previous_report.self_critique if previous_report.self_critique else 'none specified'}\n"
+            f"Address these directly in your revised analysis."
+        )
+    else:
+        retry_context = ""
+
     return {
         "game_summary_text": state.to_ai_summary(),
         "offensive_strategy": d.offensive_strategy,
@@ -270,4 +284,5 @@ def build_prompt_variables(state) -> dict:
         "defensive_focus_instruction": DEFENSIVE_FOCUS_INSTRUCTIONS[d.defensive_focus],
         "risk_tolerance_instruction": RISK_TOLERANCE_INSTRUCTIONS[d.risk_tolerance],
         "game_objective_instruction": GAME_OBJECTIVE_INSTRUCTIONS[d.game_objective],
+        "retry_context": retry_context,
     }
