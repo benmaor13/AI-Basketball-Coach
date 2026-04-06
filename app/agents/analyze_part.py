@@ -45,6 +45,7 @@ class AnalystAgent:
         """
         try:
             prompt_vars = build_prompt_variables(state)
+            print(prompt_vars["game_summary_text"])
             logger.info(
                 f"Prompt built — {state.home_team.name} vs {state.away_team.name} "
                 f"| Period {state.current_period} "

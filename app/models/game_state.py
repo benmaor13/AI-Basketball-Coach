@@ -10,13 +10,13 @@ from app.core.constants import (
     FOUL_TROUBLE_BUFFER_SECOND_HALF,
     YOUTH_AGE_THRESHOLD,
     OPPONENT_FOUL_TROUBLE_BUFFER,
-    STAR_PLAYER_FOUL_TROUBLE_BUFFER,
+    STAR_PLAYER_FOUL_TROUBLE_BUFFER,SIGNIFICANT_RUN_THRESHOLD
 )
 from .team import Team
 from .league_rules import LeagueRules
 from .game_momentum import GameMomentum
 from .coach_directives import CoachDirectives
-from .examples import GAME_STATE_EXAMPLE
+from .examples import GAME_STATE_EXAMPLE,DESPERATE_COMEBACK_EXAMPLE, DEVELOP_YOUTH_EXAMPLE,WIN_NOW_CLEAN_EXAMPLE
 
 
 class GameState(BaseModel):
@@ -153,7 +153,7 @@ class GameState(BaseModel):
         show_ft = (
             self.directives.game_objective == "Kill the Clock"
             or self.directives.offensive_strategy == "Attack the Paint"
-            or flags["is_clutch_time"]
+            or flags["is_clutch_time"] or flags["is_late_close_game"]
         )
         if show_ft:
             stats.append(f"FT:{p.season_ft_pct}%")
@@ -257,11 +257,13 @@ class GameState(BaseModel):
 
         # Timeouts and fouls — single source of truth from GameState
         lines.append(f"Timeouts Left: {self._get_my_timeouts()} / {self.rules.max_timeouts}")
-        lines.append(
-            f"Team Fouls (Penalty at {self.rules.team_fouls_to_penalty}):"
-            f" Us: {self._get_my_fouls()}, Opponent: {self._get_opp_fouls()}"
-        )
 
+        opp_fouls = self._get_opp_fouls()
+        my_fouls = self._get_my_fouls()
+        opp_penalty_status = "IN PENALTY" if opp_fouls >= self.rules.team_fouls_to_penalty else "not in penalty"
+        my_penalty_status = "IN PENALTY" if my_fouls >= self.rules.team_fouls_to_penalty else "not in penalty"
+        lines.append(f"Team Fouls (Penalty at {self.rules.team_fouls_to_penalty}):"
+        f" Us: {my_fouls} ({my_penalty_status}), Opponent: {opp_fouls} ({opp_penalty_status})")
         # Possession only tactically relevant at end of period or clutch time
         if flags["end_of_period"] or flags["is_clutch_time"]:
             lines.append(f"Possession: {self.possession}")
@@ -291,9 +293,10 @@ class GameState(BaseModel):
         opp_run = self.momentum.away_team_run if my_team_is_home else self.momentum.home_team_run
 
         if my_run > 0:
-            run_info = f" | WE are on a {my_run} run"
+            run_info = f" | WE are on a {my_run} points run"
         elif opp_run > 0:
-            run_info = f" | OPPONENT on a {opp_run} run"
+            severity = "SIGNIFICANT" if opp_run >= SIGNIFICANT_RUN_THRESHOLD else "recent"
+            run_info = f" | OPPONENT on a {opp_run} point run ({severity} momentum shift)"
         else:
             run_info = ""
 
@@ -330,7 +333,7 @@ class GameState(BaseModel):
         available_bench_sorted = sorted(available_bench, key=lambda p: (p.position_rank, -p.efficiency_score))
 
         if available_bench_sorted:
-            lines.append("\n[AVAILABLE BENCH PERSONNEL]")
+            lines.append("\n[AVAILABLE BENCH PERSONNEL- ONLY THESE PLAYERS CAN BE SUBBED IN]")
             for p in available_bench_sorted:
                 lines.append(f"- {self._fmt_player(p, flags)}")
 
@@ -374,7 +377,6 @@ class GameState(BaseModel):
                 f"[Consider Foul Strategy] OPPONENT VULNERABILITY:"
                 f" Attack {', '.join(opp_foul_trouble)} to force disqualification!"
             )
-
         # Mandatory subs
         injured_on_court = [
             f"{p.name} (#{p.number})"
@@ -397,7 +399,8 @@ class GameState(BaseModel):
                     )
                 if p.fatigue_level in ("Tired", "Exhausted"):
                     alarms.append(
-                        f"[Risk Warning] STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}."
+                        f"[Risk Warning-Address in recommendations] STAR FATIGUE: {p.name} (#{p.number}) is {p.fatigue_level}."
+                        f"Consider substitution based on Risk Tolerance directive."
                     )
 
         # Non-star fatigue
@@ -440,7 +443,27 @@ class GameState(BaseModel):
             alarms.append("[Timeout Warning] CRITICAL: 1 timeout left! Use carefully.")
         if my_timeouts == 0:
             alarms.append("[Timeout Warning] CRITICAL: 0 timeouts left! Do NOT call timeout.")
-
+        if self.directives.game_objective == "Desperate Comeback":
+            if opp_team.active_lineup:
+                worst_ft = min(opp_team.active_lineup, key=lambda p: p.season_ft_pct)
+                alarms.append(
+                    f"[Consider Foul Strategy] CLOCK MANAGEMENT: Intentionally foul "
+                    f"{worst_ft.name} (#{worst_ft.number}, FT:{worst_ft.season_ft_pct}%) "
+                    #f"— lowest FT% on court. Stop the clock and force missed free throws."
+                )
+                alarms.append(
+                    "[Consider Pace Management] COMEBACK: "
+                    #"Push pace after every defensive "
+                    #"stop — maximize possession count in remaining time."
+                )
+        my_team_is_home = self.target_team == "Home"
+        opp_run = self.momentum.away_team_run if my_team_is_home else self.momentum.home_team_run
+        if opp_run>= SIGNIFICANT_RUN_THRESHOLD:
+            alarms.append(
+                f"[Consider Timeout] MOMENTUM: Opponent on a {opp_run} point run"
+                #f" — "
+                #f"calling a timeout to break their rhythm is a valid action."
+            )
         # Youth development
         if self.directives.game_objective == "Develop Youth":
             young_bench = [
@@ -485,5 +508,5 @@ class GameState(BaseModel):
         return "\n".join(summary)
 
     model_config = ConfigDict(
-        json_schema_extra={"example": GAME_STATE_EXAMPLE}
+        json_schema_extra={"example": DEVELOP_YOUTH_EXAMPLE}
     )

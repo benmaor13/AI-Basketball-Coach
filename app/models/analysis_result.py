@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Literal
-from .examples import ANALYSIS_REPORT_EXAMPLE
+from .examples import ANALYSIS_REPORT_EXAMPLE, DESPERATE_COMEBACK_EXAMPLE,WIN_NOW_CLEAN_EXAMPLE
 
 
 class TacticalAction(BaseModel):
@@ -88,12 +88,20 @@ class AnalysisReport(BaseModel):
     main_threat: str = Field(
         ...,
         description=(
-            "The single most critical problem identified from [OPPONENT THREAT ON COURT] or [ACTIONABLE ALERTS]. "
-            "One sentence, specific — name the player or situation."
+            "The single most critical problem right now, considering the full game context. "
+            "Priority order for identifying the main threat: "
+            "1. Game situation — if it is CLUTCH TIME or Late Close Game with a significant "
+            "score deficit, the game situation itself is the main threat "
+            "(e.g. 'Down 10 with 1:45 left in the final period — every possession is critical'). "
+            "2. [ACTIONABLE ALERTS] — mandatory subs, star foul trouble, or star fatigue "
+            "that directly risk the game outcome. "
+            "3. [OPPONENT THREAT ON COURT] — only if no higher priority threat exists. "
+            "One sentence, specific. Name the player or situation."
+            "If no urgent threat exists, identify the most relevant risk on the horizon — opponent's best player, upcoming period, or potential momentum shift"
         ),
         json_schema_extra={"example": (
-            "Ronen Bar (#11) has Fouls:4/5 — one more foul removes our primary rim protector "
-            "in the most critical minutes of the game."
+            "Down 10 with 1:45 left in the final period — every possession is critical "
+            "and two key players are too fatigued to perform at the required level."
         )}
     )
 
@@ -137,5 +145,5 @@ class AnalysisReport(BaseModel):
     )
 
     model_config = ConfigDict(
-        json_schema_extra={"example": ANALYSIS_REPORT_EXAMPLE}
+        json_schema_extra={"example":ANALYSIS_REPORT_EXAMPLE}
     )

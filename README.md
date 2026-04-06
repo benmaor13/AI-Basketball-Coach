@@ -83,5 +83,5 @@ Then go to `http://localhost:8000/docs` — there's a full example pre-loaded in
 
 ```
 BA_OPENAI_API_KEY=your_key_here
-BA_MODEL_NAME=gpt-4o-mini
+BA_MODEL_NAME=gpt-4o
 ```

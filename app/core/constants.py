@@ -6,7 +6,7 @@ CLUTCH_TIME_MAX_SCORE_DIFF = 6
 
 # "Late close game" is a wider window  than clutch game - last period or overtime,under 4 minutes, within ~3 possessions
 LATE_GAME_MINUTES = 4
-LATE_GAME_MAX_SCORE_DIFF = 10
+LATE_GAME_MAX_SCORE_DIFF = 11
 
 # Substitutions logic
 # Minimum minutes a player must play after subbing in before being subbed out again.

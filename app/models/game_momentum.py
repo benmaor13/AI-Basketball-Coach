@@ -15,19 +15,24 @@ class GameMomentum(BaseModel):
     home_team_run: int = Field(
         default=0,
         ge=0,
-        le =50,
-        description="current streak of points by the home team when the away team did not score",
-        json_schema_extra={"example": 8}
+        le=50,
+        description=(
+            "Recent scoring advantage for the home team — the difference between "
+            "home points and away points in recent possessions. Not necessarily a "
+            "shutout run. Used to indicate momentum direction and magnitude."
+        )
     )
     # used to validate the overall_trend
     away_team_run: int = Field(
         default=0,
-        le=50,
         ge=0,
-        description="current streak of points by the away team when the home team did not score",
-        json_schema_extra={"example": 0}
+        le=50,
+        description=(
+            "Recent scoring advantage for the away team — the difference between "
+            "home points and away points in recent possessions. Not necessarily a "
+            "shutout run. Used to indicate momentum direction and magnitude."
+        )
     )
-
     crowd_intensity: Literal["Quiet", "Engaged", "Hostile", "Electric"] = Field(
         default="Engaged",
         description="The atmosphere in the arena(Quiet, Engaged, Hostile,or Electric)",
